@@ -1,0 +1,29 @@
+.
+├── prototypes/
+│   ├── mbta-bus-stop-sign-maker-alpha-v2.txt
+│   └── mbta-train-sign-maker-alpha.txt
+└── public/
+    └── assets/
+        ├── bus/
+        │   └── templates/
+        │       └── bus-stop-one-route.txt
+        ├── train/
+        │   └── templates/
+        │       ├── train-header-only.txt
+        │       └── train-header-with-maps.txt
+        ├── icons/
+        │   ├── icon-elevator.txt
+        │   ├── icon-escalator.txt
+        │   ├── icon-wheelchair.txt
+        │   ├── icon-arrow-right.txt
+        │   ├── icon-arrow-left.txt
+        │   ├── icon-bus.txt
+        │   └── icon-airplane.txt
+        └── maps/
+            ├── map-red-line.txt
+            ├── map-green-line.txt
+            ├── map-blue-line.txt
+            ├── map-orange-line.txt
+            ├── map-silver-line.txt
+            ├── map-commuter-rail.txt
+            └── map-rapid-transit-and-frequent-bus-routes.txt

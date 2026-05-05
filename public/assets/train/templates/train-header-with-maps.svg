@@ -1,0 +1,57 @@
+<svg version="1.2" xmlns="http://www.w3.org/2000/svg" viewBox="398.5 61.25 803 647.25" width="804" height="648">
+	<defs>
+		<image width="2890" height="2890" id="img1" href="assets/map-rapid-transit-and-frequent-bus-routes.png" />
+		<image width="2890" height="2890" id="img2" href="assets/map-red-line.png" />
+	</defs>
+	<style>
+		tspan { white-space:pre } 
+		.s0 { fill: #da291c } 
+		.s1 { fill: #ffffff } 
+		.s2 { fill: none; stroke: #000000; stroke-width: 3 } 
+		.t3 { font-size: 90px; fill: #ffffff; font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; font-weight: 600; } 
+		.t4 { font-size: 50px; fill: #000000; font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; font-weight: 600; } 
+		.s5 { fill: #000000 } 
+	</style>
+
+	<!--
+IMPORTANT Y-COORDINATE MATH:
+The maps and borders must attach to the bottom of the header.
+Current Header Bottom = 253.
+
+If you change the header height, update the '253' in FOUR places below:
+1 & 2: The last number in the matrix for both <use> tags.
+3 & 4: The 'y' attribute for both <rect> tags.
+-->
+
+	<use id="map-left" href="#img1" transform="matrix(.1384,0,0,.1384,401.5,253)"/>
+	<use id="map-right" href="#img2" transform="matrix(.1384,0,0,.1384,801.5,253)"/>
+	
+	<rect x="401.5" y="253" width="400" height="400" class="s2" />
+	<rect x="801.5" y="253" width="400" height="400" class="s2" />
+
+
+<!--
+HEADER HEIGHT MATH:
+Starting Y = 79.5
+Colored Band = 105 (the v105 command below)
+White Band = 68.5 (the v68.5 command below)
+TOTAL Y-AXIS = 253 (This is the number the maps need to use!)
+
+Note: The Black Outline height (v173.5) is just 105 + 68.5.
+-->
+
+	<g id="Header_Section">
+		<use id="map-thumbnail" href="#img1" transform="matrix(.061,0,0,.061,714.25,78.75)"/>
+		
+		<path class="s0" d="m1201.5 79.5v105h-800v-105z"/>
+		<path class="s1" d="m1201.5 184.5v68.5h-800v-68.5z"/>
+		<path class="s2" d="m1201.5 79.5v173.5h-800v-173.5z"/>
+
+		<text x="801.5" y="132" text-anchor="middle" dominant-baseline="central" class="t3">HARVARD</text>
+		<text x="801.5" y="218.75" text-anchor="middle" dominant-baseline="central" class="t4">BUSES AND TRAINS</text>
+
+		<path id="escalator-icon" fill-rule="evenodd" class="s5" d="m439.84 207.94c-1.68 0-3.04-1.36-3.04-3.03 0-1.68 1.36-3.03 3.04-3.03 1.67 0 3.03 1.35 3.03 3.03 0 1.67-1.36 3.03-3.03 3.03zm13.7-2.88h6.93c2.27 0 5.28 2.27 5.28 5.67 0 3.44-2.99 5.82-5.1 5.82-1.94 0-4.39 0-4.39 0-0.66 0-0.87 0.11-1.25 0.44l-17.79 17.65c-1.43 1.34-3.17 1.89-4.6 1.89-1.43 0-6.07 0-6.07 0-3.74 0-5.8-3.29-5.8-5.9 0-2.6 2.06-5.66 5.49-5.66 0 0 3.41 0 3.41 0 1.03 0 1.1-0.03 1.63-0.55l5.57-5.56h-0.01v-7.62c0-3.94 5.9-3.98 5.9 0v1.87l6.42-6.38c1.1-1.09 2.95-1.68 4.38-1.67zm2.87 8.51h3.74c1.86 0 2.59-1.88 2.59-2.88 0-1.01-1.02-2.7-2.54-2.7h-6.24c-1.27 0-2.01 0.09-2.76 0.84l-18.22 18.14c-0.68 0.67-1.46 1-2.64 1h-4.06c-1.31 0-2.59 0.94-2.59 2.62 0 1.68 1.34 2.96 2.86 2.96h5.91c1.18 0 2.1-0.29 2.82-1l17.93-17.85c0.91-0.9 1.61-1.13 3.2-1.13z"/>
+		<path id="accessible-icon-part1" fill-rule="evenodd" class="s5" d="m1166.05 232.44l0.08 0.02c-2.19 5.31-7.39 8.79-13.17 8.79-7.85 0-14.22-6.33-14.22-14.14 0-5.25 2.93-10.07 7.61-12.52l0.41 4.07c-2.71 1.98-4.31 5.12-4.31 8.45 0 5.8 4.75 10.51 10.59 10.51 5.84 0 10.58-4.71 10.58-10.51q0-0.2 0-0.4z"/>
+		<path id="accessible-icon-part2" fill-rule="evenodd" class="s5" d="m1147.14 200.45l-0.08 0.08q0-0.04 0-0.08c0-2.32 1.92-4.2 4.28-4.2 2.37 0 4.28 1.88 4.28 4.2 0 2.32-1.91 4.2-4.28 4.2q-0.08 0-0.16 0h0.08l0.49 8.24h11.14v3.48h-10.98l0.16 2.98h14.38l5.98 12.93 4.04-1.77 1.29 2.83-7.59 3.31-6.14-13.66h-15.43l-1.54-22.46z"/>
+	</g>
+</svg>

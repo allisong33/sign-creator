@@ -1,0 +1,517 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MBTA-Style Station Sign Maker — Alpha</title>
+  <style>
+    :root {
+      --page-bg: #f5f1e8;
+      --panel-bg: #ffffff;
+      --ink: #212322;
+      --muted: #666;
+      --border: #d8d2c5;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+      background: var(--page-bg);
+      color: var(--ink);
+    }
+
+    main {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 28px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: clamp(28px, 4vw, 44px);
+      letter-spacing: -0.04em;
+    }
+
+    .intro {
+      margin: 0 0 24px;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.45;
+    }
+
+    .app-shell {
+      display: grid;
+      grid-template-columns: minmax(260px, 340px) 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+
+    .controls,
+    .preview-card {
+      background: var(--panel-bg);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.06);
+    }
+
+    .controls {
+      padding: 18px;
+      position: sticky;
+      top: 16px;
+    }
+
+    .control-group { margin-bottom: 16px; }
+
+    label,
+    .group-label {
+      display: block;
+      font-weight: 700;
+      font-size: 13px;
+      margin-bottom: 7px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    input[type="text"],
+    select {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 11px 12px;
+      font-size: 16px;
+      font-family: inherit;
+      background: #fff;
+    }
+
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      margin: 9px 0;
+      font-size: 15px;
+    }
+
+    input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+    }
+
+    .button-row {
+      display: grid;
+      gap: 9px;
+      margin-top: 16px;
+    }
+
+    button {
+      appearance: none;
+      border: 0;
+      border-radius: 999px;
+      padding: 10px 14px;
+      background: var(--ink);
+      color: white;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    button.secondary { background: #5f625f; }
+    button:active { transform: translateY(1px); }
+
+    .note {
+      margin-top: 14px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .preview-card {
+      padding: 18px;
+      overflow: auto;
+    }
+
+    .preview-card svg {
+      display: block;
+      width: 100%;
+      height: auto;
+      background: #fff;
+    }
+
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.92em;
+    }
+
+    @media (max-width: 800px) {
+      main { padding: 18px; }
+      .app-shell { grid-template-columns: 1fr; }
+      .controls { position: static; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>MBTA-Style Station Sign Maker</h1>
+    <p class="intro">Alpha version: choose a line color, station name, icons, and maps. This is for digital graphics only.</p>
+
+    <div class="app-shell">
+      <section class="controls" aria-label="Sign controls">
+        <div class="control-group">
+          <label for="stationName">Station name</label>
+          <input id="stationName" type="text" value="LECHMERE" autocomplete="off" />
+        </div>
+
+        <div class="control-group">
+          <label for="subtitleText">Sub-header text</label>
+          <input id="subtitleText" type="text" value="GREEN LINE" autocomplete="off" />
+        </div>
+
+        <div class="control-group">
+          <label for="lineChoice">Train line / map</label>
+          <select id="lineChoice">
+            <option value="green" selected>Green Line</option>
+            <option value="red">Red Line</option>
+            <option value="orange">Orange Line</option>
+            <option value="blue">Blue Line</option>
+            <option value="silver">Silver Line</option>
+            <option value="commuter">Commuter Rail</option>
+          </select>
+        </div>
+
+        <div class="control-group">
+          <label for="leftIcon">Left icon</label>
+          <select id="leftIcon">
+            <option value="none">None</option>
+            <option value="elevator">Elevator</option>
+            <option value="escalator" selected>Escalator</option>
+            <option value="wheelchair">Wheelchair</option>
+            <option value="airplane">Airplane</option>
+            <option value="arrowRight">Right Arrow</option>
+            <option value="bus">Bus</option>
+          </select>
+        </div>
+
+        <div class="control-group">
+          <label for="rightIcon">Right icon</label>
+          <select id="rightIcon">
+            <option value="none">None</option>
+            <option value="elevator">Elevator</option>
+            <option value="escalator">Escalator</option>
+            <option value="wheelchair" selected>Wheelchair</option>
+            <option value="airplane">Airplane</option>
+            <option value="arrowRight">Right Arrow</option>
+            <option value="bus">Bus</option>
+          </select>
+        </div>
+
+        <div class="control-group">
+          <span class="group-label">Optional pieces</span>
+          <label class="checkbox-row">
+            <input id="showMaps" type="checkbox" />
+            Show two maps underneath
+          </label>
+        </div>
+
+        <div class="button-row">
+          <button id="openSvg" type="button">Open SVG in New Tab</button>
+          <button id="downloadSvg" type="button">Download SVG</button>
+          <button id="downloadPng" class="secondary" type="button">Download PNG Experimental</button>
+        </div>
+
+        <p class="note">Maps and icons are loaded from the local <code>public/assets</code> folder. PNG download may fail if the browser blocks local file access (use a local server if needed).</p>
+      </section>
+
+      <section>
+        <div class="preview-card">
+          <div id="preview" aria-label="Generated SVG preview"></div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    const MAP_ASSETS = {
+      spider: "../public/assets/maps/map-rapid-transit-and-frequent-bus-routes.png"
+    };
+
+    const LINE_OPTIONS = {
+      green: {
+        label: "Green Line",
+        subtitle: "GREEN LINE",
+        color: "#00843D",
+        map: "../public/assets/maps/map-green-line.png"
+      },
+      red: {
+        label: "Red Line",
+        subtitle: "RED LINE",
+        color: "#DA291C",
+        map: "../public/assets/maps/map-red-line.png"
+      },
+      orange: {
+        label: "Orange Line",
+        subtitle: "ORANGE LINE",
+        color: "#ED8B00",
+        map: "../public/assets/maps/map-orange-line-2890px-version.png"
+      },
+      blue: {
+        label: "Blue Line",
+        subtitle: "BLUE LINE",
+        color: "#003DA5",
+        map: "../public/assets/maps/map-blue-line.png"
+      },
+      silver: {
+        label: "Silver Line",
+        subtitle: "SILVER LINE",
+        color: "#7C878E",
+        map: "../public/assets/maps/map-silver-line.png"
+      },
+      commuter: {
+        label: "Commuter Rail",
+        subtitle: "COMMUTER RAIL",
+        color: "#80276C",
+        map: "../public/assets/maps/map-commuter-rail.png"
+      }
+    };
+
+    const ICON_OPTIONS = {
+      none: { label: "None", href: "" },
+      elevator: {
+        label: "Elevator",
+        href: "../public/assets/icons/icon-elevator.svg"
+      },
+      escalator: {
+        label: "Escalator",
+        href: "../public/assets/icons/icon-escalator.svg"
+      },
+      wheelchair: {
+        label: "Wheelchair",
+        href: "../public/assets/icons/icon-wheelchair.svg"
+      },
+      airplane: {
+        label: "Airplane",
+        href: "../public/assets/icons/icon-airplane.svg"
+      },
+      arrowRight: {
+        label: "Right Arrow",
+        href: "../public/assets/icons/icon-arrow-right-circle.svg"
+      },
+      bus: {
+        label: "Bus",
+        href: "../public/assets/icons/icon-bus-no-outline.svg"
+      }
+    };
+
+    const els = {
+      stationName: document.getElementById("stationName"),
+      subtitleText: document.getElementById("subtitleText"),
+      lineChoice: document.getElementById("lineChoice"),
+      leftIcon: document.getElementById("leftIcon"),
+      rightIcon: document.getElementById("rightIcon"),
+      showMaps: document.getElementById("showMaps"),
+      preview: document.getElementById("preview"),
+      openSvg: document.getElementById("openSvg"),
+      downloadSvg: document.getElementById("downloadSvg"),
+      downloadPng: document.getElementById("downloadPng")
+    };
+
+    function escapeXml(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&apos;");
+    }
+
+    function slugify(value) {
+      return String(value)
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "") || "station-sign";
+    }
+
+    function iconImage(iconKey, side) {
+      const icon = ICON_OPTIONS[iconKey];
+      if (!icon || !icon.href) return "";
+
+      const isLeft = side === "left";
+      const x = isLeft ? 425 : 1133;
+      const y = 196;
+      const id = isLeft ? "icon-left-file" : "icon-right-file";
+
+      return `
+			<image
+				id="${id}"
+				href="${escapeXml(icon.href)}"
+				x="${x}"
+				y="${y}"
+				width="44"
+				height="44"
+				preserveAspectRatio="xMidYMid meet"
+			/>`;
+    }
+
+    function buildSvg() {
+      const line = LINE_OPTIONS[els.lineChoice.value] || LINE_OPTIONS.green;
+      const stationName = escapeXml(els.stationName.value.trim() || "LECHMERE").toUpperCase();
+      const subtitleText = escapeXml(els.subtitleText.value.trim() || line.subtitle).toUpperCase();
+      const showMaps = els.showMaps.checked;
+      const leftIcon = iconImage(els.leftIcon.value, "left");
+      const rightIcon = iconImage(els.rightIcon.value, "right");
+      const icons = leftIcon || rightIcon ? `
+		<g id="Icon_Section">${leftIcon}${rightIcon}
+		</g>` : "";
+
+      const viewBox = showMaps ? "398.5 61.25 803 647.25" : "398.5 79.5 803 174";
+      const width = showMaps ? "804" : "803";
+      const height = showMaps ? "648" : "174";
+
+      const defs = showMaps ? `
+	<defs>
+		<image width="2890" height="2890" id="img1" href="${escapeXml(MAP_ASSETS.spider)}" />
+		<image width="2890" height="2890" id="img2" href="${escapeXml(line.map)}" />
+	</defs>` : "";
+
+      const maps = showMaps ? `
+	<g id="Map_Section">
+		<use id="map-left" href="#img1" transform="matrix(.1384,0,0,.1384,401.5,257)"/>
+		<use id="map-right" href="#img2" transform="matrix(.1384,0,0,.1384,801.5,257)"/>
+		<rect x="401.5" y="253" width="400" height="402" class="s-border" />
+		<rect x="801.5" y="253" width="400" height="402" class="s-border" />
+	</g>` : "";
+
+      return `<svg version="1.2" xmlns="http://www.w3.org/2000/svg" viewBox="${viewBox}" width="${width}" height="${height}">${defs}
+	<style>
+		tspan { white-space: pre; }
+
+		/* MBTA LINE / MODE COLORS */
+		.fill-green-line { fill: #00843D; }
+		.fill-red-line { fill: #DA291C; }
+		.fill-orange-line { fill: #ED8B00; }
+		.fill-blue-line { fill: #003DA5; }
+		.fill-silver-line { fill: #7C878E; }
+		.fill-commuter-rail { fill: #80276C; }
+		.fill-bus { fill: #FFC72C; }
+		.fill-ferry { fill: #008EAA; }
+		.fill-the-ride { fill: #59BEC9; }
+
+		/* SHAPE STYLING */
+		.s-line { fill: ${line.color}; }
+		.s-bg { fill: #FFFFFF; }
+		.s-border { fill: none; stroke: #000000; stroke-width: 3; }
+
+		/* TEXT STYLING */
+		.t-station {
+			font-size: 90px;
+			fill: #FFFFFF;
+			font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+			font-weight: 600;
+		}
+
+		.t-sub {
+			font-size: 50px;
+			fill: #000000;
+			font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+			font-weight: 600;
+		}
+	</style>${maps}
+
+	<g id="Header_Section">
+		<path class="s-line" d="m1201.5 79.5v105h-800v-105z"/>
+		<path class="s-bg" d="m1201.5 184.5v68.5h-800v-68.5z"/>
+		<path class="s-border" d="m1201.5 79.5v173.5h-800v-173.5z"/>
+
+		<text x="801.5" y="132" text-anchor="middle" dominant-baseline="central" class="t-station">${stationName}</text>
+		<text x="801.5" y="218.75" text-anchor="middle" dominant-baseline="central" class="t-sub">${subtitleText}</text>${icons}
+	</g>
+</svg>`;
+    }
+
+    function render() {
+      els.preview.innerHTML = buildSvg();
+    }
+
+    function svgBlobUrl() {
+      const blob = new Blob([buildSvg()], { type: "image/svg+xml;charset=utf-8" });
+      return URL.createObjectURL(blob);
+    }
+
+    function downloadBlob(blob, filename) {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    function currentFilename(extension) {
+      const line = LINE_OPTIONS[els.lineChoice.value] || LINE_OPTIONS.green;
+      return `${slugify(els.stationName.value || "station")}-${slugify(line.label)}.${extension}`;
+    }
+
+    for (const input of [els.stationName, els.subtitleText, els.lineChoice, els.leftIcon, els.rightIcon, els.showMaps]) {
+      input.addEventListener("input", render);
+      input.addEventListener("change", render);
+    }
+
+    els.lineChoice.addEventListener("change", () => {
+      const line = LINE_OPTIONS[els.lineChoice.value] || LINE_OPTIONS.green;
+      els.subtitleText.value = line.subtitle;
+      render();
+    });
+
+    els.openSvg.addEventListener("click", () => {
+      const url = svgBlobUrl();
+      window.open(url, "_blank", "noopener,noreferrer");
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    });
+
+    els.downloadSvg.addEventListener("click", () => {
+      const blob = new Blob([buildSvg()], { type: "image/svg+xml;charset=utf-8" });
+      downloadBlob(blob, currentFilename("svg"));
+    });
+
+    els.downloadPng.addEventListener("click", () => {
+      const showMaps = els.showMaps.checked;
+      const width = showMaps ? 804 : 803;
+      const height = showMaps ? 648 : 174;
+      const url = svgBlobUrl();
+      const img = new Image();
+
+      img.onload = () => {
+        try {
+          const canvas = document.createElement("canvas");
+          canvas.width = width * 2;
+          canvas.height = height * 2;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          canvas.toBlob((blob) => {
+            URL.revokeObjectURL(url);
+            if (!blob) {
+              alert("PNG export failed. The browser may have blocked export because the SVG uses external Dropbox images.");
+              return;
+            }
+            downloadBlob(blob, currentFilename("png"));
+          }, "image/png");
+        } catch (error) {
+          URL.revokeObjectURL(url);
+          alert("PNG export failed. This is usually because the SVG uses external images from Dropbox, which can trigger browser export restrictions.");
+        }
+      };
+
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        alert("PNG export failed because the generated SVG could not be loaded as an image.");
+      };
+
+      img.src = url;
+    });
+
+    render();
+  </script>
+</body>
+</html>

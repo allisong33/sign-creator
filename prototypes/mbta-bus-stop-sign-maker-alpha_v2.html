@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MBTA Bus Stop Sign Maker — Alpha</title>
+<style>
+:root{--bg:#f5f1e8;--card:#fff;--ink:#212322;--muted:#666;--border:#d8d2c5}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;background:var(--bg);color:var(--ink)}
+main{max-width:1150px;margin:0 auto;padding:28px}
+h1{margin:0 0 8px;font-size:clamp(28px,4vw,44px);letter-spacing:-.04em}
+.intro{margin:0 0 24px;color:var(--muted);line-height:1.45}
+.app{display:grid;grid-template-columns:minmax(280px,360px) 1fr;gap:20px;align-items:start}
+.controls,.preview{background:var(--card);border:1px solid var(--border);border-radius:18px;box-shadow:0 12px 30px rgba(0,0,0,.06)}
+.controls{padding:18px;position:sticky;top:16px}
+.group{margin-bottom:16px}
+label,.group-label{display:block;font-weight:700;font-size:13px;margin-bottom:7px;text-transform:uppercase;letter-spacing:.04em}
+input[type=text],textarea{width:100%;border:1px solid var(--border);border-radius:12px;padding:11px 12px;font-size:16px;font-family:inherit;background:#fff}
+textarea{min-height:86px;resize:vertical;line-height:1.25}
+.check{display:flex;align-items:center;gap:9px;margin:9px 0;font-size:15px;text-transform:none;letter-spacing:0;font-weight:400}
+input[type=checkbox]{width:18px;height:18px}
+.buttons{display:grid;gap:9px;margin-top:16px}
+button{appearance:none;border:0;border-radius:999px;padding:10px 14px;background:var(--ink);color:white;font-weight:700;cursor:pointer;font-family:inherit}
+button.secondary{background:#5f625f}
+.note{margin-top:14px;color:var(--muted);font-size:13px;line-height:1.4}
+.preview{padding:18px;overflow:auto;display:flex;justify-content:center}
+.preview svg{display:block;width:min(100%,380px);height:auto;background:#fff}
+@media(max-width:850px){main{padding:18px}.app{grid-template-columns:1fr}.controls{position:static}.preview svg{width:min(100%,340px)}}
+</style>
+</head>
+<body>
+<main>
+<h1>MBTA-Style Bus Stop Sign Maker</h1>
+<p class="intro">Alpha version: manually enter one bus route, destination, bus stop number, and whether the frequent-service clock should show. Digital graphics only.</p>
+<div class="app">
+<section class="controls">
+<div class="group"><label for="routeNumber">Bus route number</label><input id="routeNumber" type="text" value="109"></div>
+<div class="group"><label for="destinationName">Destination text</label><textarea id="destinationName">Back Bay Station</textarea></div>
+<div class="group"><label for="stopNumber">Bus stop number</label><input id="stopNumber" type="text" value="1129"></div>
+<div class="group"><span class="group-label">Frequent-service clock</span><label class="check"><input id="showClock" type="checkbox" checked>Show clock icon</label></div>
+<div class="buttons"><button id="openSvg" type="button">Open SVG in New Tab</button><button id="downloadSvg" type="button">Download SVG</button><button id="downloadPng" class="secondary" type="button">Download PNG</button></div>
+<p class="note">This first bus version only supports one route listing. Later it can be expanded for multiple routes and MBTA API lookup.</p>
+</section>
+<section><div class="preview"><div id="preview"></div></div></section>
+</div>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const els={route:$("routeNumber"),dest:$("destinationName"),stop:$("stopNumber"),showClock:$("showClock"),preview:$("preview"),open:$("openSvg"),svg:$("downloadSvg"),png:$("downloadPng")};
+function esc(v){return String(v).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&apos;")}
+function escHtml(v){return String(v).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;")}
+function slug(v){return String(v).toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"")||"bus-stop-sign"}
+function routeSize(route){const l=String(route).trim().length;if(l<=2)return 205;if(l===3)return 190;if(l===4)return 145;return 120}
+function clockSvg(){return `
+      <g id="dynamic-frequency-clock">
+        <svg x="460" y="50" width="200" height="200" viewBox="0 0 200 200">
+          <circle cx="100" cy="100" r="100" fill="#F9B326" />
+          <path d="M 100 22.5 A 77.5 77.5 0 0 1 177.5 100" fill="none" stroke="#000000" stroke-width="25" stroke-linecap="butt" />
+          <g id="clock-ticks" fill="#000000">
+            <rect x="97" y="10" width="8" height="25" transform="rotate(0, 100, 100)" />
+            <rect x="97" y="10" width="8" height="25" transform="rotate(90, 100, 100)" />
+            <rect x="97" y="10" width="8" height="25" transform="rotate(120, 100, 100)" />
+            <rect x="97" y="10" width="8" height="25" transform="rotate(150, 100, 100)" />
+            <rect x="97" y="10" width="8" height="25" transform="rotate(180, 100, 100)" />
+            <rect x="97" y="10" width="8" height="25" transform="rotate(210, 100, 100)" />
+            <rect x="97" y="10" width="8" height="25" transform="rotate(240, 100, 100)" />
+            <rect x="97" y="10" width="8" height="25" transform="rotate(270, 100, 100)" />
+            <rect x="97" y="10" width="8" height="25" transform="rotate(300, 100, 100)" />
+            <rect x="97" y="10" width="8" height="25" transform="rotate(330, 100, 100)" />
+          </g>
+          <text id="dynamic-clock-text" x="100" y="127" fill="#000000" font-family="'Arial Narrow', Arial, sans-serif" font-size="80" font-weight="bold" dx="-0.05em" text-anchor="middle"><tspan letter-spacing="-0.075em">15</tspan></text>
+        </svg>
+      </g>`}
+function buildSvg(){
+const route=esc(els.route.value.trim()||"109"),dest=escHtml(els.dest.value.trim()||"Back Bay Station"),stop=esc(els.stop.value.trim()||"1129"),fs=routeSize(route),clockMarkup=els.showClock.checked?clockSvg():"";
+return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 2065" width="700" height="2065">
+  <g id="background-base">
+    <g id="top-yellow-background">
+      <path d="M 0 400 V 325 A 350 325 0 0 1 700 325 V 400 Z" fill="#F9B326" />
+      <g id="t-logo" transform="translate(350, 200) scale(17.5) translate(-8, -8)">
+        <g>
+          <path d="M8,0C3.6,0,0,3.6,0,8s3.6,8,8,8s8-3.6,8-8S12.4,0,8,0 M8,15.3C4,15.3,0.7,12,0.7,8C0.7,4,4,0.7,8,0.7 c4,0,7.3,3.3,7.3,7.3C15.3,12,12,15.3,8,15.3C8,15.3,8,15.3,8,15.3" fill="#1C1E23" />
+          <path d="M6.7,13.2h2.5V7h3.8V4.4H2.9V7h3.8L6.7,13.2z" fill="#1C1E23" />
+        </g>
+      </g>
+    </g>
+    <g id="white-rectangle-background" transform="translate(0, 400)">
+      <rect x="0" y="0" width="700" height="1500" fill="#FFFFFF" />
+      <g id="route-pill">
+        <rect x="37" y="50" width="400" height="200" rx="100" fill="#000000" />
+        <text id="dynamic-route-number" x="233" y="150" fill="#FFFFFF" font-family="'Arial Narrow', Arial, sans-serif" font-size="${fs}" font-weight="615" text-anchor="middle" dominant-baseline="central" letter-spacing="0">${route}</text>
+      </g>
+${clockMarkup}
+      <g id="route-destination-text">
+        <foreignObject x="37" y="270" width="626" height="400">
+          <div id="dynamic-destination-name" xmlns="http://www.w3.org/1999/xhtml" style="font-family: 'Arial Narrow', Arial, sans-serif; font-size: 100px; font-weight: 600; color: #000000; line-height: 1.1; word-wrap: break-word; margin: 0; height: 100%; width: 100%;">${dest}</div>
+        </foreignObject>
+      </g>
+      <g id="tow-zone-block">
+        <rect x="15" y="1290" width="670" height="200" rx="25" ry="25" fill="#AA202E" />
+        <polygon points="610,1343 610,1433 650,1388" fill="#FFFFFF" />
+        <text x="350" y="1360" fill="#FFFFFF" font-family="'Arial Narrow', Arial, sans-serif" font-size="70" font-weight="bold" letter-spacing="7" text-anchor="middle">NO STOPPING</text>
+        <text x="350" y="1408" fill="#FFFFFF" font-family="'Arial Narrow', Arial, sans-serif" font-size="45" font-weight="bold" letter-spacing="8" text-anchor="middle">$100 FINE</text>
+        <text x="350" y="1475" fill="#FFFFFF" font-family="'Arial Narrow', Arial, sans-serif" font-size="70" font-weight="bold" letter-spacing="7" text-anchor="middle">TOW ZONE</text>
+      </g>
+    </g>
+    <g id="bottom-yellow-background">
+      <path d="M 0 1900 H 700 V 2030 A 35 35 0 0 1 665 2065 H 35 A 35 35 0 0 1 0 2030 Z" fill="#F9B326" />
+      <text x="30" y="1950" fill="#333333" font-family="'Arial Narrow', Arial, sans-serif" font-size="42" font-weight="bold" letter-spacing="2" text-anchor="start">
+        <tspan x="30" dy="0">MBTA.COM</tspan>
+        <tspan x="30" dy="45">617-222-3200</tspan>
+        <tspan x="30" dy="45">617-222-5146 (TTY)</tspan>
+      </text>
+      <g id="bus-stop-info">
+        <text x="670" y="1950" fill="#333333" font-family="'Arial Narrow', Arial, sans-serif" font-size="42" font-weight="bold" letter-spacing="2" text-anchor="end">BUS STOP #</text>
+        <text id="dynamic-stop-number" x="670" y="2040" fill="#333333" font-family="'Arial Narrow', Arial, sans-serif" font-size="100" font-weight="bold" letter-spacing="-0.8" text-anchor="end">${stop}</text>
+      </g>
+    </g>
+    <path d="M 0 400 V 325 A 350 325 0 0 1 700 325 V 2030 A 35 35 0 0 1 665 2065 H 35 A 35 35 0 0 1 0 2030 Z" fill="none" stroke="#CCCCCC" stroke-width="3" />
+  </g>
+</svg>`}
+function render(){els.preview.innerHTML=buildSvg()}
+function blobUrl(){return URL.createObjectURL(new Blob([buildSvg()],{type:"image/svg+xml;charset=utf-8"}))}
+function download(blob,name){const url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url)}
+function name(ext){return `bus-stop-${slug(els.route.value||"route")}-stop-${slug(els.stop.value||"number")}.${ext}`}
+[els.route,els.dest,els.stop,els.showClock].forEach(input=>{input.addEventListener("input",render);input.addEventListener("change",render)})
+els.open.addEventListener("click",()=>{const url=blobUrl();window.open(url,"_blank","noopener,noreferrer");setTimeout(()=>URL.revokeObjectURL(url),60000)})
+els.svg.addEventListener("click",()=>download(new Blob([buildSvg()],{type:"image/svg+xml;charset=utf-8"}),name("svg")))
+els.png.addEventListener("click",()=>{const url=blobUrl(),img=new Image();img.onload=()=>{const c=document.createElement("canvas");c.width=1400;c.height=4130;c.getContext("2d").drawImage(img,0,0,c.width,c.height);c.toBlob(b=>{URL.revokeObjectURL(url);if(!b){alert("PNG export failed.");return}download(b,name("png"))},"image/png")};img.onerror=()=>{URL.revokeObjectURL(url);alert("PNG export failed because the generated SVG could not be loaded as an image.")};img.src=url})
+render()
+</script>
+</body>
+</html>

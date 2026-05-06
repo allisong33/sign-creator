@@ -219,7 +219,7 @@
           <button id="downloadPng" class="secondary" type="button">Download PNG Experimental</button>
         </div>
 
-        <p class="note">Maps and icons are loaded from the local <code>public/assets</code> folder. PNG download may fail if the browser blocks local file access (use a local server if needed).</p>
+        <p class="note">Maps and icons are loaded from <code>public/assets/train/</code>. PNG download may fail if the browser blocks local file access (use a local server if needed).</p>
       </section>
 
       <section>
@@ -232,7 +232,7 @@
 
   <script>
     const MAP_ASSETS = {
-      spider: "../public/assets/maps/map-rapid-transit-and-frequent-bus-routes.png"
+      spider: "public/assets/train/maps/map-rapid-transit-and-frequent-bus-routes.png"
     };
 
     const LINE_OPTIONS = {
@@ -240,37 +240,37 @@
         label: "Green Line",
         subtitle: "GREEN LINE",
         color: "#00843D",
-        map: "../public/assets/maps/map-green-line.png"
+        map: "public/assets/train/maps/map-green-line.png"
       },
       red: {
         label: "Red Line",
         subtitle: "RED LINE",
         color: "#DA291C",
-        map: "../public/assets/maps/map-red-line.png"
+        map: "public/assets/train/maps/map-red-line.png"
       },
       orange: {
         label: "Orange Line",
         subtitle: "ORANGE LINE",
         color: "#ED8B00",
-        map: "../public/assets/maps/map-orange-line-2890px-version.png"
+        map: "public/assets/train/maps/map-orange-line-2890px-version.png"
       },
       blue: {
         label: "Blue Line",
         subtitle: "BLUE LINE",
         color: "#003DA5",
-        map: "../public/assets/maps/map-blue-line.png"
+        map: "public/assets/train/maps/map-blue-line.png"
       },
       silver: {
         label: "Silver Line",
         subtitle: "SILVER LINE",
         color: "#7C878E",
-        map: "../public/assets/maps/map-silver-line.png"
+        map: "public/assets/train/maps/map-silver-line.png"
       },
       commuter: {
         label: "Commuter Rail",
         subtitle: "COMMUTER RAIL",
         color: "#80276C",
-        map: "../public/assets/maps/map-commuter-rail.png"
+        map: "public/assets/train/maps/map-commuter-rail.png"
       }
     };
 
@@ -278,27 +278,27 @@
       none: { label: "None", href: "" },
       elevator: {
         label: "Elevator",
-        href: "../public/assets/icons/icon-elevator.svg"
+        href: "public/assets/train/icons/icon-elevator.svg"
       },
       escalator: {
         label: "Escalator",
-        href: "../public/assets/icons/icon-escalator.svg"
+        href: "public/assets/train/icons/icon-escalator.svg"
       },
       wheelchair: {
         label: "Wheelchair",
-        href: "../public/assets/icons/icon-wheelchair.svg"
+        href: "public/assets/train/icons/icon-wheelchair.svg"
       },
       airplane: {
         label: "Airplane",
-        href: "../public/assets/icons/icon-airplane.svg"
+        href: "public/assets/train/icons/icon-airplane.svg"
       },
       arrowRight: {
         label: "Right Arrow",
-        href: "../public/assets/icons/icon-arrow-right-circle.svg"
+        href: "public/assets/train/icons/icon-arrow-right-circle.svg"
       },
       bus: {
         label: "Bus",
-        href: "../public/assets/icons/icon-bus-no-outline.svg"
+        href: "public/assets/train/icons/icon-bus-no-outline.svg"
       }
     };
 

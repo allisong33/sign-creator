@@ -24,6 +24,13 @@ input[type=checkbox]{width:18px;height:18px}
 button{appearance:none;border:0;border-radius:999px;padding:10px 14px;background:var(--ink);color:white;font-weight:700;cursor:pointer;font-family:inherit}
 button.secondary{background:#5f625f}
 .note{margin-top:14px;color:var(--muted);font-size:13px;line-height:1.4}
+.mode-toggle{display:flex;gap:8px;margin-bottom:16px}
+.mode-toggle button{flex:1;background:#e8e4db;color:var(--ink);font-size:13px;padding:8px 10px}
+.mode-toggle button.active{background:var(--ink);color:#fff}
+select{width:100%;border:1px solid var(--border);border-radius:12px;padding:11px 12px;font-size:16px;font-family:inherit;background:#fff;appearance:none;cursor:pointer}
+select:disabled{opacity:.5;cursor:default}
+.api-msg{font-size:13px;margin-top:6px;line-height:1.4;color:var(--muted)}
+.api-msg.error{color:#c0392b}
 .preview{padding:18px;overflow:auto;display:flex;justify-content:center}
 .preview svg{display:block;width:min(100%,380px);height:auto;background:#fff}
 @media(max-width:850px){main{padding:18px}.app{grid-template-columns:1fr}.controls{position:static}.preview svg{width:min(100%,340px)}}
@@ -36,9 +43,27 @@ button.secondary{background:#5f625f}
 <div class="app">
 
 <section class="controls">
+  <div class="mode-toggle">
+    <button id="modeCustom" type="button" class="active">Custom</button>
+    <button id="modeApi" type="button">Use MBTA Data</button>
+  </div>
   <div class="group"><label for="stopNumber">Bus stop number</label><input id="stopNumber" type="text" value="1129" autocomplete="off"></div>
-  <div id="route-blocks"></div>
-  <button id="addRoute" type="button" class="secondary" style="width:100%;margin-bottom:12px">+ Add Route</button>
+  <div id="custom-panel">
+    <div id="route-blocks"></div>
+    <button id="addRoute" type="button" class="secondary" style="width:100%;margin-bottom:12px">+ Add Route</button>
+  </div>
+  <div id="api-panel" style="display:none">
+    <div class="group">
+      <label for="apiRoute">Route</label>
+      <select id="apiRoute"><option value="">Loading routes…</option></select>
+      <p id="apiRouteMsg" class="api-msg"></p>
+    </div>
+    <div class="group" id="apiStopGroup" style="display:none">
+      <label for="apiStop">Stop</label>
+      <select id="apiStop"><option value="">Select a stop…</option></select>
+      <p id="apiStopMsg" class="api-msg"></p>
+    </div>
+  </div>
   <div class="buttons">
     <button id="openSvg" type="button">Open SVG in New Tab</button>
     <button id="downloadSvg" type="button">Download SVG</button>
@@ -142,6 +167,7 @@ button.secondary{background:#5f625f}
 
 <script type="module">
 import { renderSign, getSignSvgString } from './src/bus/renderer.js';
+import { fetchBusRoutes, fetchStopsForRoute } from './src/bus/api.js';
 
 const MAX_ROUTES = 5;
 
@@ -232,6 +258,92 @@ document.getElementById('downloadPng').addEventListener('click', () => {
   };
   img.onerror = () => { URL.revokeObjectURL(url); alert('PNG export failed.'); };
   img.src = url;
+});
+
+// Mode switching
+let _routesCache = null;
+
+function setMode(mode) {
+  document.getElementById('custom-panel').style.display = mode === 'custom' ? '' : 'none';
+  document.getElementById('api-panel').style.display    = mode === 'api'    ? '' : 'none';
+  document.getElementById('modeCustom').classList.toggle('active', mode === 'custom');
+  document.getElementById('modeApi').classList.toggle('active', mode === 'api');
+  if (mode === 'api') loadRoutes();
+}
+
+document.getElementById('modeCustom').addEventListener('click', () => setMode('custom'));
+document.getElementById('modeApi').addEventListener('click', () => setMode('api'));
+
+async function loadRoutes() {
+  const sel = document.getElementById('apiRoute');
+  const msg = document.getElementById('apiRouteMsg');
+  if (_routesCache) { populateRouteSelect(_routesCache); return; }
+  sel.innerHTML = '<option value="">Loading routes…</option>';
+  sel.disabled = true;
+  msg.textContent = '';
+  msg.className = 'api-msg';
+  try {
+    _routesCache = await fetchBusRoutes();
+    populateRouteSelect(_routesCache);
+  } catch (e) {
+    sel.innerHTML = '<option value="">Failed to load</option>';
+    msg.textContent = 'Could not reach MBTA API. Check your connection.';
+    msg.className = 'api-msg error';
+  } finally {
+    sel.disabled = false;
+  }
+}
+
+function populateRouteSelect(routes) {
+  const sel = document.getElementById('apiRoute');
+  sel.innerHTML = '<option value="">Select a route…</option>' +
+    routes.map(r => `<option value="${r.id}" data-frequent="${r.isFrequent}">${r.shortName} — ${r.longName}</option>`).join('');
+}
+
+document.getElementById('apiRoute').addEventListener('change', async function () {
+  const routeId = this.value;
+  const stopGroup = document.getElementById('apiStopGroup');
+  const stopSel   = document.getElementById('apiStop');
+  const stopMsg   = document.getElementById('apiStopMsg');
+  stopGroup.style.display = 'none';
+  stopSel.innerHTML = '<option value="">Loading stops…</option>';
+  stopMsg.textContent = '';
+  stopMsg.className = 'api-msg';
+  if (!routeId) return;
+  stopGroup.style.display = '';
+  stopSel.disabled = true;
+  try {
+    const stops = await fetchStopsForRoute(routeId);
+    stopSel.innerHTML = '<option value="">Select a stop…</option>' +
+      stops.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+  } catch (e) {
+    stopSel.innerHTML = '<option value="">Failed to load</option>';
+    stopMsg.textContent = 'Could not load stops.';
+    stopMsg.className = 'api-msg error';
+  } finally {
+    stopSel.disabled = false;
+  }
+});
+
+document.getElementById('apiStop').addEventListener('change', function () {
+  const stopId = this.value;
+  if (!stopId) return;
+  const stopName = this.options[this.selectedIndex].text;
+  const routeSel = document.getElementById('apiRoute');
+  const routeOpt = routeSel.options[routeSel.selectedIndex];
+  const routeId  = routeSel.value;
+  const isFrequent = routeOpt.dataset.frequent === 'true';
+
+  const blocks = getRouteBlocks();
+  if (blocks.length === 0) addRouteBlock({});
+  const firstBlock = getRouteBlocks()[0];
+  firstBlock.querySelector('.route-number').value = routeId;
+  firstBlock.querySelector('.route-dest').value   = stopName;
+  firstBlock.querySelector('.route-clock').checked = isFrequent;
+  document.getElementById('stopNumber').value = stopId;
+
+  setMode('custom');
+  refresh();
 });
 
 // Initialize with one pre-filled route block

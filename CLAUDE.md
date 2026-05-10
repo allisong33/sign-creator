@@ -71,6 +71,14 @@ SVG export serializes the live DOM: `new XMLSerializer().serializeToString(svgEl
 - Direction determination: `GET /stops?filter[route]={routeId}&filter[direction_id]=0&fields[stop]=id` — if stopId appears, direction is 0; otherwise 1. Use `direction_destinations[direction]` as the destination text (e.g. "Back Bay Station"), not `long_name` (which includes both terminals and "via" text).
 - API key lives in `src/bus/api.js` as a constant. **TODO (Phase 10):** move to a Vercel serverless proxy; see `docs/API-Notes.md`
 
+## UI conventions (bus.html controls)
+
+Button classes and their colors:
+- `.add` — MBTA yellow `#F9B326`, dark text — used for **+ Add Route**
+- `.remove` — red `#b71c1c`, white text — used for **Remove route**
+- `.export` — steel blue `#546e7a`, white text — used for all three export buttons
+- `.mode-toggle button.active` — MBTA yellow `#F9B326`, dark text — active mode tab
+
 ## Key reference files
 
 | Path | Purpose |

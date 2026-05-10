@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>MBTA Bus Stop Sign Maker — Alpha</title>
+<title>MBTA Bus Stop Sign Maker</title>
 <style>
 :root{--bg:#f5f1e8;--card:#fff;--ink:#212322;--muted:#666;--border:#d8d2c5}
 *{box-sizing:border-box}
@@ -22,113 +22,409 @@ textarea{min-height:86px;resize:vertical;line-height:1.25}
 input[type=checkbox]{width:18px;height:18px}
 .buttons{display:grid;gap:9px;margin-top:16px}
 button{appearance:none;border:0;border-radius:999px;padding:10px 14px;background:var(--ink);color:white;font-weight:700;cursor:pointer;font-family:inherit}
-button.secondary{background:#5f625f}
+button.secondary{background:var(--ink)}
+button.add{background:#F9B326;color:#212322}
+button.remove{background:#b71c1c;color:#fff}
+button.export{background:#546e7a}
 .note{margin-top:14px;color:var(--muted);font-size:13px;line-height:1.4}
+.mode-toggle{display:flex;gap:8px;margin-bottom:16px}
+.mode-toggle button{flex:1;background:#e8e4db;color:var(--ink);font-size:13px;padding:8px 10px}
+.mode-toggle button.active{background:#F9B326;color:#212322}
+select{width:100%;border:1px solid var(--border);border-radius:12px;padding:11px 12px;font-size:16px;font-family:inherit;background:#fff;appearance:none;cursor:pointer}
+select:disabled{opacity:.5;cursor:default}
+.api-msg{font-size:13px;margin-top:6px;line-height:1.4;color:var(--muted)}
+.api-msg.error{color:#c0392b}
 .preview{padding:18px;overflow:auto;display:flex;justify-content:center}
-.preview svg{display:block;width:min(100%,380px);height:auto;background:#fff}
-@media(max-width:850px){main{padding:18px}.app{grid-template-columns:1fr}.controls{position:static}.preview svg{width:min(100%,340px)}}
+.preview svg{display:block;width:min(100%,266px);height:auto;background:#fff}
+@media(max-width:850px){main{padding:18px}.app{grid-template-columns:1fr}.controls{position:static}.preview svg{width:min(100%,238px)}}
 </style>
 </head>
 <body>
 <main>
 <h1>MBTA-Style Bus Stop Sign Maker</h1>
-<p class="intro">Alpha version: manually enter one bus route, destination, bus stop number, and whether the frequent-service clock should show. Digital graphics only.</p>
+<p class="intro">Create a bus stop sign. Enter route details manually, then export as SVG or PNG.</p>
 <div class="app">
+
 <section class="controls">
-<div class="group"><label for="routeNumber">Bus route number</label><input id="routeNumber" type="text" value="109"></div>
-<div class="group"><label for="destinationName">Destination text</label><textarea id="destinationName">Back Bay Station</textarea></div>
-<div class="group"><label for="stopNumber">Bus stop number</label><input id="stopNumber" type="text" value="1129"></div>
-<div class="group"><span class="group-label">Frequent-service clock</span><label class="check"><input id="showClock" type="checkbox" checked>Show clock icon</label></div>
-<div class="buttons"><button id="openSvg" type="button">Open SVG in New Tab</button><button id="downloadSvg" type="button">Download SVG</button><button id="downloadPng" class="secondary" type="button">Download PNG</button></div>
-<p class="note">This first bus version only supports one route listing. Later it can be expanded for multiple routes and MBTA API lookup.</p>
+  <div class="mode-toggle">
+    <button id="modeCustom" type="button" class="active">Custom</button>
+    <button id="modeApi" type="button">Use MBTA Data</button>
+  </div>
+  <div id="custom-panel">
+    <div id="route-blocks"></div>
+    <button id="addRoute" type="button" class="add" style="width:100%;margin-bottom:12px">+ Add Route</button>
+  </div>
+  <div id="api-panel" style="display:none">
+    <div class="group">
+      <label for="apiRoute">Route</label>
+      <select id="apiRoute"><option value="">Loading routes…</option></select>
+      <p id="apiRouteMsg" class="api-msg"></p>
+    </div>
+    <div class="group" id="apiStopGroup" style="display:none">
+      <label for="apiStop">Stop</label>
+      <select id="apiStop"><option value="">Select a stop…</option></select>
+      <p id="apiStopMsg" class="api-msg"></p>
+    </div>
+  </div>
+  <div class="group"><label for="stopNumber">Bus stop number</label><input id="stopNumber" type="text" value="1129" autocomplete="off"></div>
+  <div class="buttons">
+    <button id="openSvg" type="button" class="export">Open SVG in New Tab</button>
+    <button id="downloadSvg" type="button" class="export">Download SVG</button>
+    <button id="downloadPng" type="button" class="export">Download PNG</button>
+  </div>
+  <p class="note">Serve over HTTP for ES modules: <code>python3 -m http.server 8080</code></p>
 </section>
-<section><div class="preview"><div id="preview"></div></div></section>
+
+<section>
+  <div class="preview">
+    <svg id="main-mbta-sign" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 2065" width="100%" height="100%">
+      <g id="background-base">
+
+        <g id="top-yellow-background">
+          <path d="M 0 400 V 325 A 350 325 0 0 1 700 325 V 400 Z" fill="#F9B326" />
+          <g id="t-logo" transform="translate(350, 200) scale(17.5) translate(-8, -8)">
+            <g>
+              <path d="M8,0C3.6,0,0,3.6,0,8s3.6,8,8,8s8-3.6,8-8S12.4,0,8,0 M8,15.3C4,15.3,0.7,12,0.7,8C0.7,4,4,0.7,8,0.7 c4,0,7.3,3.3,7.3,7.3C15.3,12,12,15.3,8,15.3C8,15.3,8,15.3,8,15.3" fill="#1C1E23" />
+              <path d="M6.7,13.2h2.5V7h3.8V4.4H2.9V7h3.8L6.7,13.2z" fill="#1C1E23" />
+            </g>
+          </g>
+        </g>
+
+        <g id="white-rectangle-background" transform="translate(0, 400)">
+          <rect id="dynamic-white-bg" x="0" y="0" width="700" height="1500" fill="#FFFFFF" />
+
+          <g id="route-item-template">
+            <g id="route-pill">
+              <rect x="37" y="50" width="400" height="200" rx="100" fill="#000000" />
+              <text id="dynamic-route-number" x="233" y="150" fill="#FFFFFF" font-family="'Arial Narrow', Arial, sans-serif" font-size="190" font-weight="615" text-anchor="middle" dominant-baseline="central" letter-spacing="0">109</text>
+            </g>
+
+            <g id="dynamic-frequency-clock">
+              <svg x="460" y="50" width="200" height="200" viewBox="0 0 200 200">
+                <circle cx="100" cy="100" r="100" fill="#F9B326" />
+                <path d="M 100 22.5 A 77.5 77.5 0 0 1 177.5 100" fill="none" stroke="#000000" stroke-width="25" stroke-linecap="butt" />
+                <g id="clock-ticks" fill="#000000">
+                  <rect x="97" y="10" width="8" height="25" transform="rotate(0, 100, 100)" />
+                  <rect x="97" y="10" width="8" height="25" transform="rotate(90, 100, 100)" />
+                  <rect x="97" y="10" width="8" height="25" transform="rotate(120, 100, 100)" />
+                  <rect x="97" y="10" width="8" height="25" transform="rotate(150, 100, 100)" />
+                  <rect x="97" y="10" width="8" height="25" transform="rotate(180, 100, 100)" />
+                  <rect x="97" y="10" width="8" height="25" transform="rotate(210, 100, 100)" />
+                  <rect x="97" y="10" width="8" height="25" transform="rotate(240, 100, 100)" />
+                  <rect x="97" y="10" width="8" height="25" transform="rotate(270, 100, 100)" />
+                  <rect x="97" y="10" width="8" height="25" transform="rotate(300, 100, 100)" />
+                  <rect x="97" y="10" width="8" height="25" transform="rotate(330, 100, 100)" />
+                </g>
+                <text id="dynamic-clock-text" x="100" y="127" fill="#000000" font-family="'Arial Narrow', Arial, sans-serif" font-size="80" font-weight="bold" dx="-0.05em" text-anchor="middle"><tspan letter-spacing="-0.075em">15</tspan></text>
+              </svg>
+            </g>
+
+            <g id="route-destination-text">
+              <foreignObject x="37" y="270" width="626" height="400">
+                <div id="dynamic-destination-name" xmlns="http://www.w3.org/1999/xhtml" style="font-family: 'Arial Narrow', Arial, sans-serif; font-size: 100px; font-weight: 600; color: #000000; line-height: 1.1; word-wrap: break-word; margin: 0; width: 100%;">Back Bay Station</div>
+              </foreignObject>
+            </g>
+          </g>
+
+          <g id="extra-routes-container"></g>
+
+          <g id="tow-zone-block">
+            <rect x="15" y="1290" width="670" height="200" rx="25" ry="25" fill="#AA202E" />
+            <polygon points="610,1343 610,1433 650,1388" fill="#FFFFFF" />
+            <text x="350" y="1360" fill="#FFFFFF" font-family="'Arial Narrow', Arial, sans-serif" font-size="70" font-weight="bold" letter-spacing="7" text-anchor="middle">NO STOPPING</text>
+            <text x="350" y="1408" fill="#FFFFFF" font-family="'Arial Narrow', Arial, sans-serif" font-size="45" font-weight="bold" letter-spacing="8" text-anchor="middle">$100 FINE</text>
+            <text x="350" y="1475" fill="#FFFFFF" font-family="'Arial Narrow', Arial, sans-serif" font-size="70" font-weight="bold" letter-spacing="7" text-anchor="middle">TOW ZONE</text>
+          </g>
+        </g>
+
+        <g id="bottom-yellow-background">
+          <path d="M 0 1900 H 700 V 2030 A 35 35 0 0 1 665 2065 H 35 A 35 35 0 0 1 0 2030 Z" fill="#F9B326" />
+          <text x="30" y="1950" fill="#333333" font-family="'Arial Narrow', Arial, sans-serif" font-size="42" font-weight="bold" letter-spacing="2" text-anchor="start">
+            <tspan x="30" dy="0">MBTA.COM</tspan>
+            <tspan x="30" dy="45">617-222-3200</tspan>
+            <tspan x="30" dy="45">617-222-5146 (TTY)</tspan>
+          </text>
+          <g id="bus-stop-info">
+            <text x="670" y="1950" fill="#333333" font-family="'Arial Narrow', Arial, sans-serif" font-size="42" font-weight="bold" letter-spacing="2" text-anchor="end">BUS STOP #</text>
+            <text id="dynamic-stop-number" x="670" y="2040" fill="#333333" font-family="'Arial Narrow', Arial, sans-serif" font-size="100" font-weight="bold" letter-spacing="-0.8" text-anchor="end">1129</text>
+          </g>
+        </g>
+
+        <path id="outer-perimeter-border" d="M 0 400 V 325 A 350 325 0 0 1 700 325 V 2030 A 35 35 0 0 1 665 2065 H 35 A 35 35 0 0 1 0 2030 Z" fill="none" stroke="#CCCCCC" stroke-width="3" />
+      </g>
+    </svg>
+  </div>
+</section>
+
 </div>
 </main>
-<script>
-const $=id=>document.getElementById(id);
-const els={route:$("routeNumber"),dest:$("destinationName"),stop:$("stopNumber"),showClock:$("showClock"),preview:$("preview"),open:$("openSvg"),svg:$("downloadSvg"),png:$("downloadPng")};
-function esc(v){return String(v).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&apos;")}
-function escHtml(v){return String(v).replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;")}
-function slug(v){return String(v).toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"")||"bus-stop-sign"}
-function routeSize(route){const l=String(route).trim().length;if(l<=2)return 205;if(l===3)return 190;if(l===4)return 145;return 120}
-function clockSvg(){return `
-      <g id="dynamic-frequency-clock">
-        <svg x="460" y="50" width="200" height="200" viewBox="0 0 200 200">
-          <circle cx="100" cy="100" r="100" fill="#F9B326" />
-          <path d="M 100 22.5 A 77.5 77.5 0 0 1 177.5 100" fill="none" stroke="#000000" stroke-width="25" stroke-linecap="butt" />
-          <g id="clock-ticks" fill="#000000">
-            <rect x="97" y="10" width="8" height="25" transform="rotate(0, 100, 100)" />
-            <rect x="97" y="10" width="8" height="25" transform="rotate(90, 100, 100)" />
-            <rect x="97" y="10" width="8" height="25" transform="rotate(120, 100, 100)" />
-            <rect x="97" y="10" width="8" height="25" transform="rotate(150, 100, 100)" />
-            <rect x="97" y="10" width="8" height="25" transform="rotate(180, 100, 100)" />
-            <rect x="97" y="10" width="8" height="25" transform="rotate(210, 100, 100)" />
-            <rect x="97" y="10" width="8" height="25" transform="rotate(240, 100, 100)" />
-            <rect x="97" y="10" width="8" height="25" transform="rotate(270, 100, 100)" />
-            <rect x="97" y="10" width="8" height="25" transform="rotate(300, 100, 100)" />
-            <rect x="97" y="10" width="8" height="25" transform="rotate(330, 100, 100)" />
-          </g>
-          <text id="dynamic-clock-text" x="100" y="127" fill="#000000" font-family="'Arial Narrow', Arial, sans-serif" font-size="80" font-weight="bold" dx="-0.05em" text-anchor="middle"><tspan letter-spacing="-0.075em">15</tspan></text>
-        </svg>
-      </g>`}
-function buildSvg(){
-const route=esc(els.route.value.trim()||"109"),dest=escHtml(els.dest.value.trim()||"Back Bay Station"),stop=esc(els.stop.value.trim()||"1129"),fs=routeSize(route),clockMarkup=els.showClock.checked?clockSvg():"";
-return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 2065" width="700" height="2065">
-  <g id="background-base">
-    <g id="top-yellow-background">
-      <path d="M 0 400 V 325 A 350 325 0 0 1 700 325 V 400 Z" fill="#F9B326" />
-      <g id="t-logo" transform="translate(350, 200) scale(17.5) translate(-8, -8)">
-        <g>
-          <path d="M8,0C3.6,0,0,3.6,0,8s3.6,8,8,8s8-3.6,8-8S12.4,0,8,0 M8,15.3C4,15.3,0.7,12,0.7,8C0.7,4,4,0.7,8,0.7 c4,0,7.3,3.3,7.3,7.3C15.3,12,12,15.3,8,15.3C8,15.3,8,15.3,8,15.3" fill="#1C1E23" />
-          <path d="M6.7,13.2h2.5V7h3.8V4.4H2.9V7h3.8L6.7,13.2z" fill="#1C1E23" />
-        </g>
-      </g>
-    </g>
-    <g id="white-rectangle-background" transform="translate(0, 400)">
-      <rect x="0" y="0" width="700" height="1500" fill="#FFFFFF" />
-      <g id="route-pill">
-        <rect x="37" y="50" width="400" height="200" rx="100" fill="#000000" />
-        <text id="dynamic-route-number" x="233" y="150" fill="#FFFFFF" font-family="'Arial Narrow', Arial, sans-serif" font-size="${fs}" font-weight="615" text-anchor="middle" dominant-baseline="central" letter-spacing="0">${route}</text>
-      </g>
-${clockMarkup}
-      <g id="route-destination-text">
-        <foreignObject x="37" y="270" width="626" height="400">
-          <div id="dynamic-destination-name" xmlns="http://www.w3.org/1999/xhtml" style="font-family: 'Arial Narrow', Arial, sans-serif; font-size: 100px; font-weight: 600; color: #000000; line-height: 1.1; word-wrap: break-word; margin: 0; height: 100%; width: 100%;">${dest}</div>
-        </foreignObject>
-      </g>
-      <g id="tow-zone-block">
-        <rect x="15" y="1290" width="670" height="200" rx="25" ry="25" fill="#AA202E" />
-        <polygon points="610,1343 610,1433 650,1388" fill="#FFFFFF" />
-        <text x="350" y="1360" fill="#FFFFFF" font-family="'Arial Narrow', Arial, sans-serif" font-size="70" font-weight="bold" letter-spacing="7" text-anchor="middle">NO STOPPING</text>
-        <text x="350" y="1408" fill="#FFFFFF" font-family="'Arial Narrow', Arial, sans-serif" font-size="45" font-weight="bold" letter-spacing="8" text-anchor="middle">$100 FINE</text>
-        <text x="350" y="1475" fill="#FFFFFF" font-family="'Arial Narrow', Arial, sans-serif" font-size="70" font-weight="bold" letter-spacing="7" text-anchor="middle">TOW ZONE</text>
-      </g>
-    </g>
-    <g id="bottom-yellow-background">
-      <path d="M 0 1900 H 700 V 2030 A 35 35 0 0 1 665 2065 H 35 A 35 35 0 0 1 0 2030 Z" fill="#F9B326" />
-      <text x="30" y="1950" fill="#333333" font-family="'Arial Narrow', Arial, sans-serif" font-size="42" font-weight="bold" letter-spacing="2" text-anchor="start">
-        <tspan x="30" dy="0">MBTA.COM</tspan>
-        <tspan x="30" dy="45">617-222-3200</tspan>
-        <tspan x="30" dy="45">617-222-5146 (TTY)</tspan>
-      </text>
-      <g id="bus-stop-info">
-        <text x="670" y="1950" fill="#333333" font-family="'Arial Narrow', Arial, sans-serif" font-size="42" font-weight="bold" letter-spacing="2" text-anchor="end">BUS STOP #</text>
-        <text id="dynamic-stop-number" x="670" y="2040" fill="#333333" font-family="'Arial Narrow', Arial, sans-serif" font-size="100" font-weight="bold" letter-spacing="-0.8" text-anchor="end">${stop}</text>
-      </g>
-    </g>
-    <path d="M 0 400 V 325 A 350 325 0 0 1 700 325 V 2030 A 35 35 0 0 1 665 2065 H 35 A 35 35 0 0 1 0 2030 Z" fill="none" stroke="#CCCCCC" stroke-width="3" />
-  </g>
-</svg>`}
-function render(){els.preview.innerHTML=buildSvg()}
-function blobUrl(){return URL.createObjectURL(new Blob([buildSvg()],{type:"image/svg+xml;charset=utf-8"}))}
-function download(blob,name){const url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url)}
-function name(ext){return `bus-stop-${slug(els.route.value||"route")}-stop-${slug(els.stop.value||"number")}.${ext}`}
-[els.route,els.dest,els.stop,els.showClock].forEach(input=>{input.addEventListener("input",render);input.addEventListener("change",render)})
-els.open.addEventListener("click",()=>{const url=blobUrl();window.open(url,"_blank","noopener,noreferrer");setTimeout(()=>URL.revokeObjectURL(url),60000)})
-els.svg.addEventListener("click",()=>download(new Blob([buildSvg()],{type:"image/svg+xml;charset=utf-8"}),name("svg")))
-els.png.addEventListener("click",()=>{const url=blobUrl(),img=new Image();img.onload=()=>{const c=document.createElement("canvas");c.width=1400;c.height=4130;c.getContext("2d").drawImage(img,0,0,c.width,c.height);c.toBlob(b=>{URL.revokeObjectURL(url);if(!b){alert("PNG export failed.");return}download(b,name("png"))},"image/png")};img.onerror=()=>{URL.revokeObjectURL(url);alert("PNG export failed because the generated SVG could not be loaded as an image.")};img.src=url})
-render()
+
+<template id="route-block-template">
+  <div class="route-block" style="border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:10px">
+    <div class="group"><label>Route number</label><input type="text" class="route-number" value="" autocomplete="off"></div>
+    <div class="group"><label>Destination text</label><textarea class="route-dest" style="min-height:70px"></textarea></div>
+    <div class="group"><label class="check"><input type="checkbox" class="route-clock">Show frequent-service clock</label></div>
+    <button type="button" class="remove-route remove" style="width:100%">Remove route</button>
+  </div>
+</template>
+
+<script type="module">
+import { renderSign, getSignSvgString } from './src/bus/renderer.js';
+import { fetchBusRoutes, fetchStopsForRoute, fetchRoutesForStop } from './src/bus/api.js';
+
+const MAX_ROUTES = 5;
+
+function getRouteBlocks() {
+  return Array.from(document.querySelectorAll('#route-blocks .route-block'));
+}
+
+function currentState() {
+  const stopInput = document.getElementById('stopNumber');
+  return {
+    stopNumber: stopInput.value.trim() || '',
+    routes: getRouteBlocks().map(block => ({
+      routeNumber: block.querySelector('.route-number').value.trim() || '',
+      displayText: block.querySelector('.route-dest').value.trim()   || '',
+      showClock:   block.querySelector('.route-clock').checked,
+    })),
+  };
+}
+
+function refresh() { renderSign(currentState()); }
+
+function syncButtons() {
+  const blocks = getRouteBlocks();
+  document.getElementById('addRoute').disabled = blocks.length >= MAX_ROUTES;
+  blocks.forEach(b => {
+    b.querySelector('.remove-route').disabled = blocks.length <= 1;
+  });
+}
+
+function addRouteBlock(defaults = {}) {
+  const tmpl = document.getElementById('route-block-template');
+  const clone = tmpl.content.cloneNode(true);
+  const block = clone.querySelector('.route-block');
+  if (defaults.routeNumber !== undefined) block.querySelector('.route-number').value = defaults.routeNumber;
+  if (defaults.displayText  !== undefined) block.querySelector('.route-dest').value   = defaults.displayText;
+  if (defaults.showClock    !== undefined) block.querySelector('.route-clock').checked = defaults.showClock;
+
+  block.querySelector('.remove-route').addEventListener('click', () => {
+    block.remove(); syncButtons(); refresh();
+  });
+  block.querySelectorAll('input, textarea').forEach(el => {
+    el.addEventListener('input',  refresh);
+    el.addEventListener('change', refresh);
+  });
+
+  document.getElementById('route-blocks').appendChild(block);
+  syncButtons();
+}
+
+document.getElementById('addRoute').addEventListener('click', () => {
+  addRouteBlock({ routeNumber: '', displayText: '', showClock: false });
+  refresh();
+});
+
+document.getElementById('stopNumber').addEventListener('input',  refresh);
+document.getElementById('stopNumber').addEventListener('change', refresh);
+
+// Export helpers
+function slug(v) { return String(v).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'bus-stop'; }
+function firstRoute() { return getRouteBlocks()[0]; }
+function filename(ext) {
+  const r = firstRoute();
+  const rn = r ? r.querySelector('.route-number').value : '';
+  return `bus-stop-${slug(rn)}-stop-${slug(document.getElementById('stopNumber').value)}.${ext}`;
+}
+function svgBlob() { return new Blob([getSignSvgString()], { type: 'image/svg+xml;charset=utf-8' }); }
+function downloadBlob(blob, name) {
+  const url = URL.createObjectURL(blob), a = document.createElement('a');
+  a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+
+document.getElementById('openSvg').addEventListener('click', () => {
+  const url = URL.createObjectURL(svgBlob());
+  window.open(url, '_blank', 'noopener,noreferrer');
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
+});
+document.getElementById('downloadSvg').addEventListener('click', () => downloadBlob(svgBlob(), filename('svg')));
+// Browsers taint the canvas when an SVG with <foreignObject> is drawn onto it,
+// blocking toBlob(). For PNG export we replace each foreignObject with native
+// SVG <text>/<tspan> elements so no foreignObject ever touches the canvas.
+function stripForeignObjects(svgEl) {
+  const NS = 'http://www.w3.org/2000/svg';
+  const measureCtx = document.createElement('canvas').getContext('2d');
+  Array.from(svgEl.querySelectorAll('foreignObject')).forEach(fo => {
+    const div = fo.querySelector('div');
+    const rawText = div ? div.textContent.trim() : '';
+    if (!rawText) { fo.remove(); return; }
+
+    const x        = parseFloat(fo.getAttribute('x')      || 0);
+    const y        = parseFloat(fo.getAttribute('y')      || 0);
+    const maxW     = parseFloat(fo.getAttribute('width')  || 626);
+    const fontSize = 100;
+    const lineH    = 110; // font-size * line-height (1.1)
+    // ~85px = half-leading (5px) + ascent (~80px) positions the alphabetic baseline
+    const baseline = y + 85;
+
+    measureCtx.font = `600 ${fontSize}px 'Arial Narrow', Arial, sans-serif`;
+    const words = rawText.split(/\s+/);
+    const lines = [];
+    let cur = '';
+    for (const w of words) {
+      const test = cur ? cur + ' ' + w : w;
+      if (measureCtx.measureText(test).width > maxW && cur) { lines.push(cur); cur = w; }
+      else cur = test;
+    }
+    if (cur) lines.push(cur);
+
+    const textEl = document.createElementNS(NS, 'text');
+    textEl.setAttribute('fill', '#000000');
+    textEl.setAttribute('font-family', "'Arial Narrow', Arial, sans-serif");
+    textEl.setAttribute('font-size', fontSize);
+    textEl.setAttribute('font-weight', '600');
+    lines.forEach((line, i) => {
+      const ts = document.createElementNS(NS, 'tspan');
+      ts.setAttribute('x', x);
+      ts.setAttribute('y', baseline + i * lineH);
+      ts.textContent = line;
+      textEl.appendChild(ts);
+    });
+    fo.parentNode.replaceChild(textEl, fo);
+  });
+}
+
+document.getElementById('downloadPng').addEventListener('click', () => {
+  const svgEl = document.getElementById('main-mbta-sign');
+  const vb = svgEl.getAttribute('viewBox').split(' ').map(Number);
+  const scale = 2;
+  const clone = svgEl.cloneNode(true);
+  clone.setAttribute('width', vb[2]);
+  clone.setAttribute('height', vb[3]);
+  stripForeignObjects(clone);
+  const url = URL.createObjectURL(new Blob([new XMLSerializer().serializeToString(clone)], { type: 'image/svg+xml;charset=utf-8' }));
+  const img = new Image();
+  img.onload = () => {
+    const c = document.createElement('canvas');
+    c.width = vb[2] * scale; c.height = vb[3] * scale;
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    try {
+      c.toBlob(b => { URL.revokeObjectURL(url); if (b) downloadBlob(b, filename('png')); else alert('PNG export failed.'); }, 'image/png');
+    } catch (e) {
+      URL.revokeObjectURL(url);
+      alert('PNG export failed: ' + e.message);
+    }
+  };
+  img.onerror = () => { URL.revokeObjectURL(url); alert('PNG export failed.'); };
+  img.src = url;
+});
+
+// Mode switching
+let _routesCache = null;
+
+function setMode(mode) {
+  document.getElementById('custom-panel').style.display = mode === 'custom' ? '' : 'none';
+  document.getElementById('api-panel').style.display    = mode === 'api'    ? '' : 'none';
+  document.getElementById('modeCustom').classList.toggle('active', mode === 'custom');
+  document.getElementById('modeApi').classList.toggle('active', mode === 'api');
+  if (mode === 'api') loadRoutes();
+}
+
+document.getElementById('modeCustom').addEventListener('click', () => setMode('custom'));
+document.getElementById('modeApi').addEventListener('click', () => setMode('api'));
+
+async function loadRoutes() {
+  const sel = document.getElementById('apiRoute');
+  const msg = document.getElementById('apiRouteMsg');
+  if (_routesCache) { populateRouteSelect(_routesCache); return; }
+  sel.innerHTML = '<option value="">Loading routes…</option>';
+  sel.disabled = true;
+  msg.textContent = '';
+  msg.className = 'api-msg';
+  try {
+    _routesCache = await fetchBusRoutes();
+    populateRouteSelect(_routesCache);
+  } catch (e) {
+    sel.innerHTML = '<option value="">Failed to load</option>';
+    msg.textContent = 'Could not reach MBTA API. Check your connection.';
+    msg.className = 'api-msg error';
+  } finally {
+    sel.disabled = false;
+  }
+}
+
+function populateRouteSelect(routes) {
+  const sel = document.getElementById('apiRoute');
+  sel.innerHTML = '<option value="">Select a route…</option>' +
+    routes.map(r => `<option value="${r.id}" data-frequent="${r.isFrequent}">${r.shortName} — ${r.longName}</option>`).join('');
+}
+
+document.getElementById('apiRoute').addEventListener('change', async function () {
+  const routeId = this.value;
+  const stopGroup = document.getElementById('apiStopGroup');
+  const stopSel   = document.getElementById('apiStop');
+  const stopMsg   = document.getElementById('apiStopMsg');
+  stopGroup.style.display = 'none';
+  stopSel.innerHTML = '<option value="">Loading stops…</option>';
+  stopMsg.textContent = '';
+  stopMsg.className = 'api-msg';
+  if (!routeId) return;
+  stopGroup.style.display = '';
+  stopSel.disabled = true;
+  try {
+    const stops = await fetchStopsForRoute(routeId);
+    stopSel.innerHTML = '<option value="">Select a stop…</option>' +
+      stops.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+  } catch (e) {
+    stopSel.innerHTML = '<option value="">Failed to load</option>';
+    stopMsg.textContent = 'Could not load stops.';
+    stopMsg.className = 'api-msg error';
+  } finally {
+    stopSel.disabled = false;
+  }
+});
+
+document.getElementById('apiStop').addEventListener('change', async function () {
+  const stopId = this.value;
+  if (!stopId) return;
+  const stopName = this.options[this.selectedIndex].text;
+  const stopMsg  = document.getElementById('apiStopMsg');
+
+  this.disabled = true;
+  stopMsg.textContent = 'Loading all routes for this stop…';
+  stopMsg.className = 'api-msg';
+
+  let routes;
+  try {
+    routes = await fetchRoutesForStop(stopId);
+  } catch (e) {
+    stopMsg.textContent = 'Could not load routes for this stop.';
+    stopMsg.className = 'api-msg error';
+    this.disabled = false;
+    return;
+  }
+  this.disabled = false;
+  stopMsg.textContent = '';
+
+  // Clear all existing route blocks and replace with every route at this stop
+  document.getElementById('route-blocks').innerHTML = '';
+  routes.slice(0, MAX_ROUTES).forEach(route => {
+    addRouteBlock({
+      routeNumber: route.shortName,
+      displayText: route.destination,
+      showClock:   route.isFrequent,
+    });
+  });
+
+  document.getElementById('stopNumber').value = stopId;
+  setMode('custom');
+  refresh();
+});
+
+// Initialize with one pre-filled route block
+addRouteBlock({ routeNumber: '109', displayText: 'Back Bay Station', showClock: true });
+refresh();
 </script>
 </body>
 </html>

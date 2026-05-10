@@ -170,7 +170,7 @@ select:disabled{opacity:.5;cursor:default}
 
 <script type="module">
 import { renderSign, getSignSvgString } from './src/bus/renderer.js';
-import { fetchBusRoutes, fetchStopsForRoute } from './src/bus/api.js';
+import { fetchBusRoutes, fetchStopsForRoute, fetchRoutesForStop } from './src/bus/api.js';
 
 const MAX_ROUTES = 5;
 
@@ -385,23 +385,39 @@ document.getElementById('apiRoute').addEventListener('change', async function ()
   }
 });
 
-document.getElementById('apiStop').addEventListener('change', function () {
+document.getElementById('apiStop').addEventListener('change', async function () {
   const stopId = this.value;
   if (!stopId) return;
   const stopName = this.options[this.selectedIndex].text;
-  const routeSel = document.getElementById('apiRoute');
-  const routeOpt = routeSel.options[routeSel.selectedIndex];
-  const routeId  = routeSel.value;
-  const isFrequent = routeOpt.dataset.frequent === 'true';
+  const stopMsg  = document.getElementById('apiStopMsg');
 
-  const blocks = getRouteBlocks();
-  if (blocks.length === 0) addRouteBlock({});
-  const firstBlock = getRouteBlocks()[0];
-  firstBlock.querySelector('.route-number').value = routeId;
-  firstBlock.querySelector('.route-dest').value   = stopName;
-  firstBlock.querySelector('.route-clock').checked = isFrequent;
+  this.disabled = true;
+  stopMsg.textContent = 'Loading all routes for this stop…';
+  stopMsg.className = 'api-msg';
+
+  let routes;
+  try {
+    routes = await fetchRoutesForStop(stopId);
+  } catch (e) {
+    stopMsg.textContent = 'Could not load routes for this stop.';
+    stopMsg.className = 'api-msg error';
+    this.disabled = false;
+    return;
+  }
+  this.disabled = false;
+  stopMsg.textContent = '';
+
+  // Clear all existing route blocks and replace with every route at this stop
+  document.getElementById('route-blocks').innerHTML = '';
+  routes.slice(0, MAX_ROUTES).forEach(route => {
+    addRouteBlock({
+      routeNumber: route.shortName,
+      displayText: route.destination,
+      showClock:   route.isFrequent,
+    });
+  });
+
   document.getElementById('stopNumber').value = stopId;
-
   setMode('custom');
   refresh();
 });

@@ -246,15 +246,72 @@ document.getElementById('openSvg').addEventListener('click', () => {
   setTimeout(() => URL.revokeObjectURL(url), 60000);
 });
 document.getElementById('downloadSvg').addEventListener('click', () => downloadBlob(svgBlob(), filename('svg')));
+// Browsers taint the canvas when an SVG with <foreignObject> is drawn onto it,
+// blocking toBlob(). For PNG export we replace each foreignObject with native
+// SVG <text>/<tspan> elements so no foreignObject ever touches the canvas.
+function stripForeignObjects(svgEl) {
+  const NS = 'http://www.w3.org/2000/svg';
+  const measureCtx = document.createElement('canvas').getContext('2d');
+  Array.from(svgEl.querySelectorAll('foreignObject')).forEach(fo => {
+    const div = fo.querySelector('div');
+    const rawText = div ? div.textContent.trim() : '';
+    if (!rawText) { fo.remove(); return; }
+
+    const x        = parseFloat(fo.getAttribute('x')      || 0);
+    const y        = parseFloat(fo.getAttribute('y')      || 0);
+    const maxW     = parseFloat(fo.getAttribute('width')  || 626);
+    const fontSize = 100;
+    const lineH    = 110; // font-size * line-height (1.1)
+    // ~85px = half-leading (5px) + ascent (~80px) positions the alphabetic baseline
+    const baseline = y + 85;
+
+    measureCtx.font = `600 ${fontSize}px 'Arial Narrow', Arial, sans-serif`;
+    const words = rawText.split(/\s+/);
+    const lines = [];
+    let cur = '';
+    for (const w of words) {
+      const test = cur ? cur + ' ' + w : w;
+      if (measureCtx.measureText(test).width > maxW && cur) { lines.push(cur); cur = w; }
+      else cur = test;
+    }
+    if (cur) lines.push(cur);
+
+    const textEl = document.createElementNS(NS, 'text');
+    textEl.setAttribute('fill', '#000000');
+    textEl.setAttribute('font-family', "'Arial Narrow', Arial, sans-serif");
+    textEl.setAttribute('font-size', fontSize);
+    textEl.setAttribute('font-weight', '600');
+    lines.forEach((line, i) => {
+      const ts = document.createElementNS(NS, 'tspan');
+      ts.setAttribute('x', x);
+      ts.setAttribute('y', baseline + i * lineH);
+      ts.textContent = line;
+      textEl.appendChild(ts);
+    });
+    fo.parentNode.replaceChild(textEl, fo);
+  });
+}
+
 document.getElementById('downloadPng').addEventListener('click', () => {
-  const vb = document.getElementById('main-mbta-sign').getAttribute('viewBox').split(' ').map(Number);
-  const scale = 2, url = URL.createObjectURL(svgBlob());
+  const svgEl = document.getElementById('main-mbta-sign');
+  const vb = svgEl.getAttribute('viewBox').split(' ').map(Number);
+  const scale = 2;
+  const clone = svgEl.cloneNode(true);
+  clone.setAttribute('width', vb[2]);
+  clone.setAttribute('height', vb[3]);
+  stripForeignObjects(clone);
+  const url = URL.createObjectURL(new Blob([new XMLSerializer().serializeToString(clone)], { type: 'image/svg+xml;charset=utf-8' }));
   const img = new Image();
   img.onload = () => {
     const c = document.createElement('canvas');
     c.width = vb[2] * scale; c.height = vb[3] * scale;
     c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
-    c.toBlob(b => { URL.revokeObjectURL(url); if (b) downloadBlob(b, filename('png')); else alert('PNG export failed.'); }, 'image/png');
+    try {
+      c.toBlob(b => { URL.revokeObjectURL(url); if (b) downloadBlob(b, filename('png')); else alert('PNG export failed.'); }, 'image/png');
+    } catch (e) {
+      URL.revokeObjectURL(url);
+      alert('PNG export failed: ' + e.message);
+    }
   };
   img.onerror = () => { URL.revokeObjectURL(url); alert('PNG export failed.'); };
   img.src = url;

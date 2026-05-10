@@ -1,0 +1,89 @@
+{
+  "planPath": "docs/superpowers/plans/2026-05-07-mbta-sign-app-full-plan.md",
+  "lastUpdated": "2026-05-07",
+  "tasks": [
+    {
+      "id": 8,
+      "subject": "[Phase 1] Embed dynamic SVG template in bus.html, switch to DOM-based rendering",
+      "status": "pending",
+      "description": "Replace the current buildSvg()→innerHTML string approach with a live SVG element in the DOM. Create src/bus/renderer.js exporting renderSign(state) and getSignSvgString(). Embed the SVG from public/assets/bus/templates/dynamic_svg_template_for_resizing_bus_sign_based_on_number_of_routes.svg inline in bus.html. Wire all existing inputs to call renderSign(). Single-route only at this step. See plan Task 1.1.\n\n```json:metadata\n{\"files\": [\"bus.html\", \"src/bus/renderer.js\"], \"verifyCommand\": \"python3 -m http.server 8080 → open localhost:8080/bus.html → sign renders; edit fields → updates live\", \"acceptanceCriteria\": [\"Sign renders on load\", \"Live updates on input\", \"Visual parity with alpha\"]}\n```"
+    },
+    {
+      "id": 9,
+      "subject": "[Phase 1] Implement route cloning and Y-axis positioning in renderer.js",
+      "status": "pending",
+      "blockedBy": [8],
+      "description": "renderSign(state) clones route-item-template for each route beyond the first, appending clones to extra-routes-container. Y-start for each clone is calculated after a requestAnimationFrame tick by measuring the previous route's destination div offsetHeight. Formula: nextY = currentY + 200 + 20 + textHeight + 67. See plan Task 1.2.\n\n```json:metadata\n{\"files\": [\"src/bus/renderer.js\"], \"verifyCommand\": \"browser console: renderSign with 2-route state → 2 routes visible without overlap\", \"acceptanceCriteria\": [\"2 routes no overlap\", \"3 routes with long text no overlap\", \"First route at Y=50\"]}\n```"
+    },
+    {
+      "id": 10,
+      "subject": "[Phase 1] Implement _applyDominoEffect() in renderer.js",
+      "status": "pending",
+      "blockedBy": [9],
+      "description": "When bottomEdge > 1250, apply extraHeight to: white-bg height, tow-zone translate, bottom-yellow translate, SVG viewBox, outer-border path regex. See plan Task 1.3.\n\n```json:metadata\n{\"files\": [\"src/bus/renderer.js\"], \"verifyCommand\": \"browser: 3 long-route sign → viewBox height > 2065\", \"acceptanceCriteria\": [\"Tow Zone below routes\", \"viewBox expands\", \"No false trigger on short sign\"]}\n```"
+    },
+    {
+      "id": 11,
+      "subject": "[Phase 1] Build multi-route custom form UI (add/remove up to 5 route blocks)",
+      "status": "pending",
+      "blockedBy": [10],
+      "description": "Replace single-route fields with dynamic form using <template> cloning. Add Route / Remove buttons. Max 5 routes. Every change calls refresh(). See plan Task 1.4.\n\n```json:metadata\n{\"files\": [\"bus.html\"], \"verifyCommand\": \"browser: add 3 routes → sign renders all 3; remove one → sign updates\", \"acceptanceCriteria\": [\"Add/remove works\", \"Disabled states correct\", \"Re-renders on every change\"]}\n```"
+    },
+    {
+      "id": 12,
+      "subject": "[Phase 1] Verify SVG/PNG export works with DOM-based rendering and Domino resize",
+      "status": "pending",
+      "blockedBy": [11],
+      "description": "Confirm all three export paths. Fix PNG canvas to read height from live viewBox. Test single-route and multi-route (Domino triggered) exports. See plan Task 1.5.\n\n```json:metadata\n{\"files\": [\"bus.html\"], \"verifyCommand\": \"download SVG with 3-route sign → open in browser → full sign visible\", \"acceptanceCriteria\": [\"SVG export valid\", \"PNG height = viewBox × 2\", \"Domino sign not clipped\"]}\n```"
+    },
+    {
+      "id": 1,
+      "subject": "[Phase 2] Get MBTA API key from user and add to src/bus/api.js",
+      "status": "pending",
+      "blockedBy": [12],
+      "description": "User pastes MBTA V3 API key. Insert into API_KEY constant in src/bus/api.js with TODO comment for Phase 10 Vercel proxy move.\n\n```json:metadata\n{\"files\": [\"src/bus/api.js\"], \"verifyCommand\": \"browser console: fetchBusRoutes() returns array\", \"acceptanceCriteria\": [\"Key present\", \"fetchBusRoutes works\", \"TODO comment present\"]}\n```"
+    },
+    {
+      "id": 3,
+      "subject": "[Phase 2] Create src/bus/api.js with fetchBusRoutes() and fetchStopsForRoute()",
+      "status": "pending",
+      "blockedBy": [12],
+      "description": "Isolated ES module. fetchBusRoutes() returns {id, shortName, longName, isFrequent}[]. isFrequent = description === 'Frequent Bus'. fetchStopsForRoute(routeId) returns {id, name}[].\n\n```json:metadata\n{\"files\": [\"src/bus/api.js\"], \"verifyCommand\": \"browser console: fetchBusRoutes() → non-empty array; isFrequent correct on Route 1\", \"acceptanceCriteria\": [\"fetchBusRoutes returns array\", \"isFrequent correct\", \"fetchStopsForRoute returns stops\"]}\n```"
+    },
+    {
+      "id": 2,
+      "subject": "[Phase 2] Add mode selector (Custom vs. Use MBTA Data) to bus.html",
+      "status": "pending",
+      "blockedBy": [12],
+      "description": "Two toggle buttons switch panels. Custom shows multi-route form. API shows dropdowns panel. Custom works offline.\n\n```json:metadata\n{\"files\": [\"bus.html\"], \"verifyCommand\": \"browser: toggle modes → correct panels shown\", \"acceptanceCriteria\": [\"Toggle switches panels\", \"Custom works offline\", \"Active button styled\"]}\n```"
+    },
+    {
+      "id": 4,
+      "subject": "[Phase 2] Wire route dropdown — fetch and populate on API mode activation",
+      "status": "pending",
+      "blockedBy": [3],
+      "description": "On API mode switch, fetch routes and populate select. Loading state. Cache result. Error message on failure.\n\n```json:metadata\n{\"files\": [\"bus.html\"], \"verifyCommand\": \"browser: switch to API mode → routes load; disconnect network → error message\", \"acceptanceCriteria\": [\"Routes populate\", \"Loading state\", \"Error message\", \"Cached\"]}\n```"
+    },
+    {
+      "id": 5,
+      "subject": "[Phase 2] Wire stop dropdown — fetch stops when route is chosen",
+      "status": "pending",
+      "blockedBy": [4],
+      "description": "Selecting a route fetches and populates stop dropdown. Hidden until route chosen. Resets on route change.\n\n```json:metadata\n{\"files\": [\"bus.html\"], \"verifyCommand\": \"browser: select Route 1 → stops populate; change to Route 39 → stops refresh\", \"acceptanceCriteria\": [\"Hidden until route chosen\", \"Stops load\", \"Stops reset on change\"]}\n```"
+    },
+    {
+      "id": 6,
+      "subject": "[Phase 2] Implement sign fill from selected API route + stop",
+      "status": "pending",
+      "blockedBy": [5],
+      "description": "Selecting a stop fills route number, destination (stop name), stop number (stop id), clock (isFrequent). Switches to Custom mode. Fields editable post-fill.\n\n```json:metadata\n{\"files\": [\"bus.html\"], \"verifyCommand\": \"browser: Route 1 + stop → sign fills; edit dest → updates\", \"acceptanceCriteria\": [\"4 fields filled\", \"Switches to Custom\", \"Editable post-fill\"]}\n```"
+    },
+    {
+      "id": 7,
+      "subject": "[Phase 2] Run Phase 2 testing checklist (§13 bus manual + bus API tests)",
+      "status": "pending",
+      "blockedBy": [6],
+      "description": "Work through all §13 items. Manual: Routes 1/39/109/7412, short/long dest, clock, stop number, exports. API: load/choose route, load/choose stop, fill, edit after fill, error fallback.\n\n```json:metadata\n{\"files\": [], \"verifyCommand\": \"manual: all §13 checklist items pass\", \"acceptanceCriteria\": [\"All manual bus tests pass\", \"All API tests pass\", \"Error fallback works\"]}\n```"
+    }
+  ]
+}

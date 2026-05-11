@@ -30,6 +30,11 @@ export async function fetchStopsForRoute(routeId) {
   }));
 }
 
+export async function fetchStopName(stopId) {
+  const data = await apiFetch(`/stops/${encodeURIComponent(stopId)}?fields[stop]=name`);
+  return data.data?.attributes?.name || '';
+}
+
 export async function fetchRoutesForStop(stopId) {
   const data = await apiFetch(
     `/routes?filter[stop]=${encodeURIComponent(stopId)}&filter[type]=3` +

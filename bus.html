@@ -34,6 +34,8 @@ select{width:100%;border:1px solid var(--border);border-radius:12px;padding:11px
 select:disabled{opacity:.5;cursor:default}
 .api-msg{font-size:13px;margin-top:6px;line-height:1.4;color:var(--muted)}
 .api-msg.error{color:#c0392b}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--ink);border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
 .preview{padding:18px;overflow:auto;display:flex;justify-content:center}
 .preview svg{display:block;width:min(100%,266px);height:auto;background:#fff}
 @media(max-width:850px){main{padding:18px}.app{grid-template-columns:1fr}.controls{position:static}.preview svg{width:min(100%,238px)}}
@@ -75,6 +77,7 @@ select:disabled{opacity:.5;cursor:default}
     </div>
     <div class="group" id="apiStopGroup" style="display:none">
       <label for="apiStop">Stop</label>
+      <input id="apiStopSearch" type="text" placeholder="Search stops…" autocomplete="off" style="margin-bottom:6px">
       <select id="apiStop"><option value="">Select a stop…</option></select>
       <p id="apiStopMsg" class="api-msg"></p>
     </div>
@@ -176,16 +179,18 @@ select:disabled{opacity:.5;cursor:default}
   <div class="route-block" style="border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:10px">
     <div class="group"><label>Route number</label><input type="text" class="route-number" value="" autocomplete="off"></div>
     <div class="group"><label>Destination text</label><textarea class="route-dest" style="min-height:70px"></textarea></div>
-    <div class="group"><label class="check"><input type="checkbox" class="route-clock">Show frequent-service clock</label></div>
+    <div class="group"><label class="check"><input type="checkbox" class="route-clock">Show frequent-service symbol</label></div>
     <button type="button" class="remove-route remove" style="width:100%">Remove route</button>
   </div>
 </template>
 
 <script type="module">
 import { renderSign, getSignSvgString } from './src/bus/renderer.js';
-import { fetchBusRoutes, fetchStopsForRoute, fetchRoutesForStop } from './src/bus/api.js';
+import { fetchBusRoutes, fetchStopsForRoute, fetchRoutesForStop, fetchStopName } from './src/bus/api.js';
 
 const MAX_ROUTES = 5;
+let _currentStops = [];
+let _exportStopName = '';
 
 function getRouteBlocks() {
   return Array.from(document.querySelectorAll('#route-blocks .route-block'));
@@ -238,16 +243,17 @@ document.getElementById('addRoute').addEventListener('click', () => {
   refresh();
 });
 
-document.getElementById('stopNumber').addEventListener('input',  refresh);
-document.getElementById('stopNumber').addEventListener('change', refresh);
+document.getElementById('stopNumber').addEventListener('input',  () => { _exportStopName = ''; refresh(); });
+document.getElementById('stopNumber').addEventListener('change', () => { _exportStopName = ''; refresh(); });
 
 // Export helpers
-function slug(v) { return String(v).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'bus-stop'; }
+function slug(v) { return String(v).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'bus'; }
 function firstRoute() { return getRouteBlocks()[0]; }
 function filename(ext) {
   const r = firstRoute();
   const rn = r ? r.querySelector('.route-number').value : '';
-  return `bus-stop-${slug(rn)}-stop-${slug(document.getElementById('stopNumber').value)}.${ext}`;
+  const sn = _exportStopName ? `-${slug(_exportStopName)}` : '';
+  return `bus-route-${slug(rn)}${sn}-stop-${slug(document.getElementById('stopNumber').value)}.${ext}`;
 }
 function svgBlob() { return new Blob([getSignSvgString()], { type: 'image/svg+xml;charset=utf-8' }); }
 function downloadBlob(blob, name) {
@@ -352,11 +358,14 @@ async function lookupByStopNumber(stopId) {
   const btn = document.getElementById('apiStopLookupBtn');
   if (!stopId) { msg.textContent = 'Enter a stop number.'; msg.className = 'api-msg error'; return; }
   btn.disabled = true;
-  msg.textContent = 'Loading…';
+  msg.innerHTML = '<span class="spinner"></span>Loading…';
   msg.className = 'api-msg';
-  let routes;
+  let routes, stopName;
   try {
-    routes = await fetchRoutesForStop(stopId);
+    [routes, stopName] = await Promise.all([
+      fetchRoutesForStop(stopId),
+      fetchStopName(stopId),
+    ]);
   } catch (e) {
     msg.textContent = 'Could not load stop. Check the number and your connection.';
     msg.className = 'api-msg error';
@@ -371,6 +380,7 @@ async function lookupByStopNumber(stopId) {
   }
   btn.disabled = false;
   msg.textContent = '';
+  _exportStopName = stopName || '';
   document.getElementById('route-blocks').innerHTML = '';
   routes.slice(0, MAX_ROUTES).forEach(route => {
     addRouteBlock({ routeNumber: route.shortName, displayText: route.destination, showClock: route.isFrequent });
@@ -391,13 +401,14 @@ async function loadRoutes() {
   const sel = document.getElementById('apiRoute');
   const msg = document.getElementById('apiRouteMsg');
   if (_routesCache) { populateRouteSelect(_routesCache); return; }
-  sel.innerHTML = '<option value="">Loading routes…</option>';
+  sel.innerHTML = '<option value="">Select a route…</option>';
   sel.disabled = true;
-  msg.textContent = '';
+  msg.innerHTML = '<span class="spinner"></span>Loading routes…';
   msg.className = 'api-msg';
   try {
     _routesCache = await fetchBusRoutes();
     populateRouteSelect(_routesCache);
+    msg.textContent = '';
   } catch (e) {
     sel.innerHTML = '<option value="">Failed to load</option>';
     msg.textContent = 'Could not reach MBTA API. Check your connection.';
@@ -413,22 +424,38 @@ function populateRouteSelect(routes) {
     routes.map(r => `<option value="${r.id}" data-frequent="${r.isFrequent}">${r.shortName} — ${r.longName}</option>`).join('');
 }
 
+function filterStops() {
+  const search = document.getElementById('apiStopSearch').value.toLowerCase();
+  const stopSel = document.getElementById('apiStop');
+  const filtered = _currentStops.filter(s => s.name.toLowerCase().includes(search));
+  stopSel.innerHTML = '<option value="">Select a stop…</option>' +
+    filtered.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+}
+
+document.getElementById('apiStopSearch').addEventListener('input', filterStops);
+
 document.getElementById('apiRoute').addEventListener('change', async function () {
   const routeId = this.value;
   const stopGroup = document.getElementById('apiStopGroup');
   const stopSel   = document.getElementById('apiStop');
   const stopMsg   = document.getElementById('apiStopMsg');
+  _currentStops = [];
   stopGroup.style.display = 'none';
-  stopSel.innerHTML = '<option value="">Loading stops…</option>';
+  stopSel.innerHTML = '<option value="">Select a stop…</option>';
+  document.getElementById('apiStopSearch').value = '';
   stopMsg.textContent = '';
   stopMsg.className = 'api-msg';
   if (!routeId) return;
   stopGroup.style.display = '';
   stopSel.disabled = true;
+  stopMsg.innerHTML = '<span class="spinner"></span>Loading stops…';
+  stopMsg.className = 'api-msg';
   try {
     const stops = await fetchStopsForRoute(routeId);
+    _currentStops = stops;
     stopSel.innerHTML = '<option value="">Select a stop…</option>' +
       stops.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+    stopMsg.textContent = '';
   } catch (e) {
     stopSel.innerHTML = '<option value="">Failed to load</option>';
     stopMsg.textContent = 'Could not load stops.';
@@ -445,7 +472,7 @@ document.getElementById('apiStop').addEventListener('change', async function () 
   const stopMsg  = document.getElementById('apiStopMsg');
 
   this.disabled = true;
-  stopMsg.textContent = 'Loading all routes for this stop…';
+  stopMsg.innerHTML = '<span class="spinner"></span>Loading all routes for this stop…';
   stopMsg.className = 'api-msg';
 
   let routes;
@@ -459,6 +486,7 @@ document.getElementById('apiStop').addEventListener('change', async function () 
   }
   this.disabled = false;
   stopMsg.textContent = '';
+  _exportStopName = stopName;
 
   // Clear all existing route blocks and replace with every route at this stop
   document.getElementById('route-blocks').innerHTML = '';

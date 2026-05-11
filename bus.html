@@ -57,14 +57,14 @@ select:disabled{opacity:.5;cursor:default}
 
 <section class="controls">
   <div class="mode-toggle">
-    <button id="modeCustom" type="button" class="active">Custom</button>
-    <button id="modeApi" type="button">Use MBTA Data</button>
+    <button id="modeApi" type="button" class="active">Use MBTA Data</button>
+    <button id="modeCustom" type="button">Custom</button>
   </div>
-  <div id="custom-panel">
+  <div id="custom-panel" style="display:none">
     <div id="route-blocks"></div>
     <button id="addRoute" type="button" class="add" style="width:100%;margin-bottom:12px">+ Add Route</button>
   </div>
-  <div id="api-panel" style="display:none">
+  <div id="api-panel">
     <div class="section-divider"><hr><span>Look up by stop number</span><hr></div>
     <div class="group">
       <div style="display:flex;gap:8px">
@@ -86,12 +86,13 @@ select:disabled{opacity:.5;cursor:default}
       <p id="apiStopMsg" class="api-msg"></p>
     </div>
   </div>
-  <div class="group" id="stopNumberGroup"><label for="stopNumber">Bus stop number</label><input id="stopNumber" type="text" value="1129" autocomplete="off"></div>
+  <div class="group" id="stopNumberGroup" style="display:none"><label for="stopNumber">Bus stop number</label><input id="stopNumber" type="text" value="" autocomplete="off"></div>
   <div class="buttons">
     <button id="openSvg" type="button" class="export">Open SVG in New Tab</button>
     <button id="downloadSvg" type="button" class="export">Download SVG</button>
     <button id="downloadPng" type="button" class="export">Download PNG</button>
   </div>
+  <button id="startOver" type="button" style="width:100%;margin-top:10px;background:#e8e4db;color:var(--ink)">Start Over</button>
   <p class="note">Serve over HTTP for ES modules: <code>python3 -m http.server 8080</code></p>
 </section>
 
@@ -514,8 +515,30 @@ async function selectStop(stopId, stopName) {
   refresh();
 }
 
-// Initialize with one pre-filled route block
-addRouteBlock({ routeNumber: '109', displayText: 'Back Bay Station', showClock: true });
+function startOver() {
+  _exportStopName = '';
+  _currentStops = [];
+  document.getElementById('route-blocks').innerHTML = '';
+  addRouteBlock({ routeNumber: '', displayText: '', showClock: false });
+  document.getElementById('stopNumber').value = '';
+  document.getElementById('apiStopLookup').value = '';
+  document.getElementById('apiStopLookupMsg').textContent = '';
+  document.getElementById('apiStopLookupMsg').className = 'api-msg';
+  document.getElementById('apiStopGroup').style.display = 'none';
+  document.getElementById('apiStopList').innerHTML = '';
+  document.getElementById('apiStopList').style.display = 'none';
+  document.getElementById('apiStopSearch').value = '';
+  document.getElementById('apiStopMsg').textContent = '';
+  document.getElementById('apiStopMsg').className = 'api-msg';
+  setMode('api');
+  refresh();
+}
+
+document.getElementById('startOver').addEventListener('click', startOver);
+
+// Initialize in API mode (routes load on first switch)
+addRouteBlock({ routeNumber: '', displayText: '', showClock: false });
+setMode('api');
 refresh();
 </script>
 </body>

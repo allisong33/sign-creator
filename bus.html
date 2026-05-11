@@ -36,6 +36,14 @@ select:disabled{opacity:.5;cursor:default}
 .api-msg.error{color:#c0392b}
 .spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--ink);border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:6px}
 @keyframes spin{to{transform:rotate(360deg)}}
+.section-divider{display:flex;align-items:center;gap:8px;margin-bottom:16px}
+.section-divider hr{flex:1;border:none;border-top:1px solid var(--border)}
+.section-divider span{font-size:12px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.06em}
+.stop-list{max-height:180px;overflow-y:auto;border:1px solid var(--border);border-radius:12px;background:#fff;margin-top:0}
+.stop-item{padding:10px 12px;cursor:pointer;font-size:16px;border-bottom:1px solid var(--border)}
+.stop-item:last-child{border-bottom:none}
+.stop-item:hover{background:#f0ece3}
+.stop-item.no-results{color:var(--muted);cursor:default;font-style:italic}
 .preview{padding:18px;overflow:auto;display:flex;justify-content:center}
 .preview svg{display:block;width:min(100%,266px);height:auto;background:#fff}
 @media(max-width:850px){main{padding:18px}.app{grid-template-columns:1fr}.controls{position:static}.preview svg{width:min(100%,238px)}}
@@ -57,32 +65,28 @@ select:disabled{opacity:.5;cursor:default}
     <button id="addRoute" type="button" class="add" style="width:100%;margin-bottom:12px">+ Add Route</button>
   </div>
   <div id="api-panel" style="display:none">
+    <div class="section-divider"><hr><span>Look up by stop number</span><hr></div>
     <div class="group">
-      <label for="apiStopLookup">Look up by stop number</label>
       <div style="display:flex;gap:8px">
         <input id="apiStopLookup" type="text" placeholder="e.g. 1129" autocomplete="off" style="margin:0">
         <button id="apiStopLookupBtn" type="button" class="add" style="white-space:nowrap;border-radius:12px;padding:11px 14px">Go</button>
       </div>
       <p id="apiStopLookupMsg" class="api-msg"></p>
     </div>
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">
-      <hr style="flex:1;border:none;border-top:1px solid var(--border)">
-      <span style="font-size:12px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.06em">or find by route</span>
-      <hr style="flex:1;border:none;border-top:1px solid var(--border)">
-    </div>
+    <div class="section-divider"><hr><span>Or find by route</span><hr></div>
     <div class="group">
       <label for="apiRoute">Route</label>
-      <select id="apiRoute"><option value="">Loading routes…</option></select>
+      <select id="apiRoute"><option value="">Select a route…</option></select>
       <p id="apiRouteMsg" class="api-msg"></p>
     </div>
     <div class="group" id="apiStopGroup" style="display:none">
-      <label for="apiStop">Stop</label>
+      <label>Stop</label>
       <input id="apiStopSearch" type="text" placeholder="Search stops…" autocomplete="off" style="margin-bottom:6px">
-      <select id="apiStop"><option value="">Select a stop…</option></select>
+      <div id="apiStopList" class="stop-list" style="display:none"></div>
       <p id="apiStopMsg" class="api-msg"></p>
     </div>
   </div>
-  <div class="group"><label for="stopNumber">Bus stop number</label><input id="stopNumber" type="text" value="1129" autocomplete="off"></div>
+  <div class="group" id="stopNumberGroup"><label for="stopNumber">Bus stop number</label><input id="stopNumber" type="text" value="1129" autocomplete="off"></div>
   <div class="buttons">
     <button id="openSvg" type="button" class="export">Open SVG in New Tab</button>
     <button id="downloadSvg" type="button" class="export">Download SVG</button>
@@ -343,8 +347,9 @@ document.getElementById('downloadPng').addEventListener('click', () => {
 let _routesCache = null;
 
 function setMode(mode) {
-  document.getElementById('custom-panel').style.display = mode === 'custom' ? '' : 'none';
-  document.getElementById('api-panel').style.display    = mode === 'api'    ? '' : 'none';
+  document.getElementById('custom-panel').style.display   = mode === 'custom' ? '' : 'none';
+  document.getElementById('api-panel').style.display      = mode === 'api'    ? '' : 'none';
+  document.getElementById('stopNumberGroup').style.display = mode === 'custom' ? '' : 'none';
   document.getElementById('modeCustom').classList.toggle('active', mode === 'custom');
   document.getElementById('modeApi').classList.toggle('active', mode === 'api');
   if (mode === 'api') loadRoutes();
@@ -424,54 +429,63 @@ function populateRouteSelect(routes) {
     routes.map(r => `<option value="${r.id}" data-frequent="${r.isFrequent}">${r.shortName} — ${r.longName}</option>`).join('');
 }
 
+function renderStopList(stops) {
+  const list = document.getElementById('apiStopList');
+  if (stops.length === 0) {
+    list.innerHTML = '<div class="stop-item no-results">No stops match</div>';
+  } else {
+    list.innerHTML = stops.map(s =>
+      `<div class="stop-item" data-id="${s.id}" data-name="${s.name.replace(/"/g, '&quot;')}">${s.name}</div>`
+    ).join('');
+    list.querySelectorAll('.stop-item').forEach(item => {
+      item.addEventListener('click', () => selectStop(item.dataset.id, item.dataset.name));
+    });
+  }
+  list.style.display = '';
+}
+
 function filterStops() {
   const search = document.getElementById('apiStopSearch').value.toLowerCase();
-  const stopSel = document.getElementById('apiStop');
-  const filtered = _currentStops.filter(s => s.name.toLowerCase().includes(search));
-  stopSel.innerHTML = '<option value="">Select a stop…</option>' +
-    filtered.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+  const filtered = search
+    ? _currentStops.filter(s => s.name.toLowerCase().includes(search))
+    : _currentStops;
+  renderStopList(filtered);
 }
 
 document.getElementById('apiStopSearch').addEventListener('input', filterStops);
 
 document.getElementById('apiRoute').addEventListener('change', async function () {
   const routeId = this.value;
-  const stopGroup = document.getElementById('apiStopGroup');
-  const stopSel   = document.getElementById('apiStop');
-  const stopMsg   = document.getElementById('apiStopMsg');
+  const stopGroup  = document.getElementById('apiStopGroup');
+  const stopList   = document.getElementById('apiStopList');
+  const stopMsg    = document.getElementById('apiStopMsg');
   _currentStops = [];
   stopGroup.style.display = 'none';
-  stopSel.innerHTML = '<option value="">Select a stop…</option>';
+  stopList.style.display = 'none';
+  stopList.innerHTML = '';
   document.getElementById('apiStopSearch').value = '';
   stopMsg.textContent = '';
   stopMsg.className = 'api-msg';
   if (!routeId) return;
   stopGroup.style.display = '';
-  stopSel.disabled = true;
   stopMsg.innerHTML = '<span class="spinner"></span>Loading stops…';
   stopMsg.className = 'api-msg';
   try {
     const stops = await fetchStopsForRoute(routeId);
     _currentStops = stops;
-    stopSel.innerHTML = '<option value="">Select a stop…</option>' +
-      stops.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+    renderStopList(stops);
     stopMsg.textContent = '';
   } catch (e) {
-    stopSel.innerHTML = '<option value="">Failed to load</option>';
     stopMsg.textContent = 'Could not load stops.';
     stopMsg.className = 'api-msg error';
-  } finally {
-    stopSel.disabled = false;
   }
 });
 
-document.getElementById('apiStop').addEventListener('change', async function () {
-  const stopId = this.value;
-  if (!stopId) return;
-  const stopName = this.options[this.selectedIndex].text;
-  const stopMsg  = document.getElementById('apiStopMsg');
-
-  this.disabled = true;
+async function selectStop(stopId, stopName) {
+  const stopMsg = document.getElementById('apiStopMsg');
+  const list    = document.getElementById('apiStopList');
+  list.style.display = 'none';
+  document.getElementById('apiStopSearch').value = stopName;
   stopMsg.innerHTML = '<span class="spinner"></span>Loading all routes for this stop…';
   stopMsg.className = 'api-msg';
 
@@ -481,14 +495,11 @@ document.getElementById('apiStop').addEventListener('change', async function () 
   } catch (e) {
     stopMsg.textContent = 'Could not load routes for this stop.';
     stopMsg.className = 'api-msg error';
-    this.disabled = false;
     return;
   }
-  this.disabled = false;
   stopMsg.textContent = '';
   _exportStopName = stopName;
 
-  // Clear all existing route blocks and replace with every route at this stop
   document.getElementById('route-blocks').innerHTML = '';
   routes.slice(0, MAX_ROUTES).forEach(route => {
     addRouteBlock({
@@ -501,7 +512,7 @@ document.getElementById('apiStop').addEventListener('change', async function () 
   document.getElementById('stopNumber').value = stopId;
   setMode('custom');
   refresh();
-});
+}
 
 // Initialize with one pre-filled route block
 addRouteBlock({ routeNumber: '109', displayText: 'Back Bay Station', showClock: true });

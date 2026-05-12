@@ -154,6 +154,10 @@
             <input id="trainStationSearch" type="text" placeholder="Search stations…" autocomplete="off" style="margin-bottom:6px">
             <div id="trainStationList" class="stop-list" style="display:none"></div>
           </div>
+          <div id="accessibilityInfo" style="display:none; margin-top:10px; font-size:14px; color:var(--muted);">
+            <strong style="display:block; margin-bottom:6px; font-size:12px; text-transform:uppercase; letter-spacing:.06em;">Accessibility</strong>
+            <div id="facilityList"></div>
+          </div>
         </div>
 
         <!-- Custom panel -->
@@ -183,7 +187,7 @@
         </div>
 
         <div class="control-group">
-          <label for="leftIcon">Left icon</label>
+          <label for="leftIcon">Left icon 1</label>
           <select id="leftIcon">
             <option value="none">None</option>
             <option value="elevator">Elevator</option>
@@ -197,8 +201,36 @@
         </div>
 
         <div class="control-group">
-          <label for="rightIcon">Right icon</label>
+          <label for="leftIcon2">Left icon 2</label>
+          <select id="leftIcon2">
+            <option value="none">None</option>
+            <option value="elevator">Elevator</option>
+            <option value="escalator">Escalator</option>
+            <option value="wheelchair">Wheelchair</option>
+            <option value="airplane">Airplane</option>
+            <option value="arrowLeft">Left Arrow</option>
+            <option value="arrowRight">Right Arrow</option>
+            <option value="bus">Bus</option>
+          </select>
+        </div>
+
+        <div class="control-group">
+          <label for="rightIcon">Right icon 1</label>
           <select id="rightIcon">
+            <option value="none">None</option>
+            <option value="elevator">Elevator</option>
+            <option value="escalator">Escalator</option>
+            <option value="wheelchair">Wheelchair</option>
+            <option value="airplane">Airplane</option>
+            <option value="arrowLeft">Left Arrow</option>
+            <option value="arrowRight">Right Arrow</option>
+            <option value="bus">Bus</option>
+          </select>
+        </div>
+
+        <div class="control-group">
+          <label for="rightIcon2">Right icon 2</label>
+          <select id="rightIcon2">
             <option value="none">None</option>
             <option value="elevator">Elevator</option>
             <option value="escalator">Escalator</option>
@@ -239,6 +271,7 @@
 
   <script type="module">
     import { LINES } from './src/train/data.js';
+    import { fetchStationFacilities } from './src/train/api.js';
 
     const MAP_ASSETS = {
       spider: 'public/assets/train/maps/map-rapid-transit-and-frequent-bus-routes.png',
@@ -269,7 +302,9 @@
       subtitleText: document.getElementById('subtitleText'),
       lineChoice:   document.getElementById('lineChoice'),
       leftIcon:     document.getElementById('leftIcon'),
+      leftIcon2:    document.getElementById('leftIcon2'),
       rightIcon:    document.getElementById('rightIcon'),
+      rightIcon2:   document.getElementById('rightIcon2'),
       showMaps:     document.getElementById('showMaps'),
       preview:      document.getElementById('preview'),
       openSvg:      document.getElementById('openSvg'),
@@ -294,11 +329,12 @@
       return new URL(path, window.location.href).href;
     }
 
-    function iconImage(iconKey, side) {
+    const ICON_X = { 'left-1': 407, 'left-2': 459, 'right-1': 1100, 'right-2': 1152 };
+
+    function iconImage(iconKey, slot) {
       const icon = ICON_OPTIONS[iconKey];
       if (!icon || !icon.href) return '';
-      const x = side === 'left' ? 425 : 1133;
-      return `<image href="${escapeXml(assetUrl(icon.href))}" x="${x}" y="196" width="44" height="44" preserveAspectRatio="xMidYMid meet"/>`;
+      return `<image href="${escapeXml(assetUrl(icon.href))}" x="${ICON_X[slot]}" y="196" width="44" height="44" preserveAspectRatio="xMidYMid meet"/>`;
     }
 
     function buildSvg() {
@@ -306,9 +342,12 @@
       const stationName = escapeXml(els.stationName.value.trim() || 'MBTA STATION').toUpperCase();
       const subtitle    = escapeXml(els.subtitleText.value.trim()).toUpperCase();
       const showMaps    = els.showMaps.checked;
-      const leftIcon    = iconImage(els.leftIcon.value, 'left');
-      const rightIcon   = iconImage(els.rightIcon.value, 'right');
-      const icons       = (leftIcon || rightIcon) ? `<g id="Icon_Section">${leftIcon}${rightIcon}</g>` : '';
+      const i1      = iconImage(els.leftIcon.value,  'left-1');
+      const i2      = iconImage(els.leftIcon2.value, 'left-2');
+      const i3      = iconImage(els.rightIcon.value, 'right-1');
+      const i4      = iconImage(els.rightIcon2.value,'right-2');
+      const allIcons = i1 + i2 + i3 + i4;
+      const icons   = allIcons ? `<g id="Icon_Section">${allIcons}</g>` : '';
 
       const viewBox = showMaps ? '398.5 61.25 803 647.25' : '398.5 79.5 803 174';
       const width   = showMaps ? '804' : '803';
@@ -359,7 +398,8 @@ ${maps}
     }
 
     // Input wiring
-    for (const input of [els.stationName, els.subtitleText, els.lineChoice, els.leftIcon, els.rightIcon, els.showMaps]) {
+    for (const input of [els.stationName, els.subtitleText, els.lineChoice,
+                         els.leftIcon, els.leftIcon2, els.rightIcon, els.rightIcon2, els.showMaps]) {
       input.addEventListener('input',  render);
       input.addEventListener('change', render);
     }
@@ -492,15 +532,35 @@ ${maps}
       renderStationList(filtered);
     });
 
-    function selectStation(id, name) {
-      const lineId = document.getElementById('trainLine').value;
-      document.getElementById('trainStationSearch').value    = name;
+    async function selectStation(id, name) {
+      const lineId  = document.getElementById('trainLine').value;
+      const station = LINES[lineId].stations.find(s => s.id === id);
+      document.getElementById('trainStationSearch').value       = name;
       document.getElementById('trainStationList').style.display = 'none';
-      // Pre-fill custom panel inputs so they're ready if user switches to Custom
       els.stationName.value  = name;
       els.subtitleText.value = LINES[lineId].defaultSubheader;
       els.lineChoice.value   = lineId;
       render();
+
+      const infoEl = document.getElementById('accessibilityInfo');
+      const listEl = document.getElementById('facilityList');
+      if (!station?.placeId) { infoEl.style.display = 'none'; return; }
+      infoEl.style.display = '';
+      listEl.textContent   = 'Loading…';
+      try {
+        const facilities = await fetchStationFacilities(station.placeId);
+        if (facilities.length === 0) {
+          listEl.textContent = 'No elevator or escalator data.';
+        } else {
+          listEl.innerHTML = facilities.map(f => {
+            const icon   = f.type === 'ELEVATOR' ? '🛗' : '🔼';
+            const status = f.status ? ` — ${f.status.toLowerCase().replace(/_/g, ' ')}` : '';
+            return `<div style="padding:3px 0">${icon} ${escapeXml(f.name)}${escapeXml(status)}</div>`;
+          }).join('');
+        }
+      } catch {
+        listEl.textContent = 'Could not load accessibility data.';
+      }
     }
 
     // ── Start Over ──────────────────────────────────────────────────────────
@@ -516,8 +576,12 @@ ${maps}
       els.subtitleText.value = '';
       els.lineChoice.value   = 'red';
       els.leftIcon.value     = 'none';
+      els.leftIcon2.value    = 'none';
       els.rightIcon.value    = 'none';
+      els.rightIcon2.value   = 'none';
       els.showMaps.checked   = false;
+      document.getElementById('accessibilityInfo').style.display = 'none';
+      document.getElementById('facilityList').textContent        = '';
       setMode('data');
       render();
     });

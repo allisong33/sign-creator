@@ -161,11 +161,11 @@
           <div class="section-divider"><hr><span>Enter details</span><hr></div>
           <div class="control-group">
             <label for="stationName">Station name</label>
-            <input id="stationName" type="text" value="LECHMERE" autocomplete="off" />
+            <input id="stationName" type="text" value="MBTA Station" autocomplete="off" />
           </div>
           <div class="control-group">
             <label for="subtitleText">Sub-header text</label>
-            <input id="subtitleText" type="text" value="GREEN LINE" autocomplete="off" />
+            <input id="subtitleText" type="text" value="" autocomplete="off" />
           </div>
         </div>
 
@@ -173,8 +173,8 @@
         <div class="control-group" id="lineColorGroup" style="display:none">
           <label for="lineChoice">Line color</label>
           <select id="lineChoice">
-            <option value="green" selected>Green Line</option>
-            <option value="red">Red Line</option>
+            <option value="green">Green Line</option>
+            <option value="red" selected>Red Line</option>
             <option value="orange">Orange Line</option>
             <option value="blue">Blue Line</option>
             <option value="silver">Silver Line</option>
@@ -187,7 +187,7 @@
           <select id="leftIcon">
             <option value="none">None</option>
             <option value="elevator">Elevator</option>
-            <option value="escalator" selected>Escalator</option>
+            <option value="escalator">Escalator</option>
             <option value="wheelchair">Wheelchair</option>
             <option value="airplane">Airplane</option>
             <option value="arrowLeft">Left Arrow</option>
@@ -202,7 +202,7 @@
             <option value="none">None</option>
             <option value="elevator">Elevator</option>
             <option value="escalator">Escalator</option>
-            <option value="wheelchair" selected>Wheelchair</option>
+            <option value="wheelchair">Wheelchair</option>
             <option value="airplane">Airplane</option>
             <option value="arrowLeft">Left Arrow</option>
             <option value="arrowRight">Right Arrow</option>
@@ -287,17 +287,24 @@
         .replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&apos;');
     }
 
+    // Converts a relative asset path to an absolute URL so that SVG exports
+    // (blob URLs, downloaded files) can resolve the images — relative paths
+    // have no base when loaded outside the page context.
+    function assetUrl(path) {
+      return new URL(path, window.location.href).href;
+    }
+
     function iconImage(iconKey, side) {
       const icon = ICON_OPTIONS[iconKey];
       if (!icon || !icon.href) return '';
       const x = side === 'left' ? 425 : 1133;
-      return `<image href="${escapeXml(icon.href)}" x="${x}" y="196" width="44" height="44" preserveAspectRatio="xMidYMid meet"/>`;
+      return `<image href="${escapeXml(assetUrl(icon.href))}" x="${x}" y="196" width="44" height="44" preserveAspectRatio="xMidYMid meet"/>`;
     }
 
     function buildSvg() {
-      const line        = LINE_OPTIONS[els.lineChoice.value] || LINE_OPTIONS.green;
-      const stationName = escapeXml(els.stationName.value.trim() || 'LECHMERE').toUpperCase();
-      const subtitle    = escapeXml(els.subtitleText.value.trim() || line.subtitle).toUpperCase();
+      const line        = LINE_OPTIONS[els.lineChoice.value] || LINE_OPTIONS.red;
+      const stationName = escapeXml(els.stationName.value.trim() || 'MBTA STATION').toUpperCase();
+      const subtitle    = escapeXml(els.subtitleText.value.trim()).toUpperCase();
       const showMaps    = els.showMaps.checked;
       const leftIcon    = iconImage(els.leftIcon.value, 'left');
       const rightIcon   = iconImage(els.rightIcon.value, 'right');
@@ -308,8 +315,8 @@
       const height  = showMaps ? '648' : '174';
 
       const defs = showMaps ? `<defs>
-  <image width="2890" height="2890" id="img1" href="${escapeXml(MAP_ASSETS.spider)}"/>
-  <image width="2890" height="2890" id="img2" href="${escapeXml(line.map)}"/>
+  <image width="2890" height="2890" id="img1" href="${escapeXml(assetUrl(MAP_ASSETS.spider))}"/>
+  <image width="2890" height="2890" id="img2" href="${escapeXml(assetUrl(line.map))}"/>
 </defs>` : '';
 
       const maps = showMaps ? `<g id="Map_Section">
@@ -475,9 +482,9 @@ ${maps}
       document.getElementById('trainStationList').innerHTML  = '';
       document.getElementById('trainStationList').style.display = 'none';
       document.getElementById('stationGroup').style.display  = 'none';
-      els.stationName.value  = '';
+      els.stationName.value  = 'MBTA Station';
       els.subtitleText.value = '';
-      els.lineChoice.value   = 'green';
+      els.lineChoice.value   = 'red';
       els.leftIcon.value     = 'none';
       els.rightIcon.value    = 'none';
       els.showMaps.checked   = false;

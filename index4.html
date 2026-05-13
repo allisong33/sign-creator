@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AdventureCore</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  /* ── desktop ── */
+  html, body { width: 100%; height: 100%; overflow: hidden; }
+
+  .desktop {
+    width: 100vw;
+    height: 100vh;
+    background-color: #008080;
+    background-image:
+      linear-gradient(rgba(0,128,128,0.85) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,128,128,0.85) 1px, transparent 1px);
+    background-size: 32px 32px;
+    position: relative;
+    font-family: 'MS Sans Serif', Tahoma, sans-serif;
+    font-size: 11px;
+    overflow: hidden;
+    user-select: none;
+  }
+
+  /* ── Win98 3-D primitives ── */
+  .raised {
+    border-top:    2px solid #ffffff;
+    border-left:   2px solid #ffffff;
+    border-right:  2px solid #404040;
+    border-bottom: 2px solid #404040;
+    background: #d4d0c8;
+  }
+  .sunken {
+    border-top:    2px solid #404040;
+    border-left:   2px solid #404040;
+    border-right:  2px solid #ffffff;
+    border-bottom: 2px solid #ffffff;
+    background: #d4d0c8;
+  }
+
+  /* ── desktop icons ── */
+  .desktop-icons {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .icon {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 72px;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 1px;
+    text-decoration: none;
+    color: #ffffff;
+  }
+  .icon:hover, .icon.selected {
+    background: rgba(0, 0, 128, 0.5);
+    outline: 1px dotted #ffffff;
+  }
+  .icon-img {
+    font-size: 32px;
+    line-height: 1;
+    margin-bottom: 4px;
+    filter: drop-shadow(1px 1px 0 rgba(0,0,0,0.6));
+  }
+  .icon-label {
+    font-size: 11px;
+    text-align: center;
+    text-shadow: 1px 1px 2px #000000;
+    line-height: 1.2;
+    word-break: break-word;
+  }
+
+  /* ── window chrome ── */
+  .window {
+    position: absolute;
+    background: #d4d0c8;
+    border-top:    2px solid #ffffff;
+    border-left:   2px solid #ffffff;
+    border-right:  2px solid #404040;
+    border-bottom: 2px solid #404040;
+    display: flex;
+    flex-direction: column;
+    min-width: 300px;
+  }
+
+  .title-bar {
+    background: linear-gradient(to right, #000080, #1084d0);
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 3px 4px;
+    cursor: default;
+    height: 22px;
+    flex-shrink: 0;
+  }
+  .title-bar-icon { font-size: 13px; margin-right: 4px; }
+  .title-bar-text { font-size: 11px; font-weight: bold; flex: 1; }
+  .title-bar-controls { display: flex; gap: 2px; }
+  .win-btn {
+    width: 16px;
+    height: 14px;
+    font-size: 9px;
+    font-weight: bold;
+    background: #d4d0c8;
+    border-top:    1px solid #ffffff;
+    border-left:   1px solid #ffffff;
+    border-right:  1px solid #404040;
+    border-bottom: 1px solid #404040;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #000;
+    line-height: 1;
+  }
+  .win-btn:active {
+    border-top:    1px solid #404040;
+    border-left:   1px solid #404040;
+    border-right:  1px solid #ffffff;
+    border-bottom: 1px solid #ffffff;
+  }
+  .win-btn.close { font-size: 11px; }
+
+  /* menu bar */
+  .menu-bar {
+    display: flex;
+    gap: 0;
+    padding: 2px 2px 0;
+    background: #d4d0c8;
+    flex-shrink: 0;
+  }
+  .menu-item {
+    padding: 2px 8px;
+    cursor: pointer;
+    font-size: 11px;
+  }
+  .menu-item:hover { background: #000080; color: #ffffff; }
+
+  /* toolbar */
+  .toolbar {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 4px;
+    border-top:    1px solid #ffffff;
+    border-bottom: 1px solid #808080;
+    background: #d4d0c8;
+    flex-shrink: 0;
+  }
+  .tb-btn {
+    width: 22px;
+    height: 20px;
+    font-size: 12px;
+    background: #d4d0c8;
+    border: 1px solid transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .tb-btn:hover {
+    border-top:    1px solid #ffffff;
+    border-left:   1px solid #ffffff;
+    border-right:  1px solid #808080;
+    border-bottom: 1px solid #808080;
+  }
+  .tb-sep { width: 1px; height: 18px; background: #808080; margin: 0 2px; border-right: 1px solid #ffffff; }
+  .address-bar {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 4px;
+    background: #d4d0c8;
+    border-bottom: 1px solid #808080;
+    flex-shrink: 0;
+  }
+  .address-label { font-size: 11px; font-weight: bold; color: #000; }
+  .address-input {
+    flex: 1;
+    font-family: 'MS Sans Serif', Tahoma, sans-serif;
+    font-size: 11px;
+    background: #ffffff;
+    border-top:    1px solid #808080;
+    border-left:   1px solid #808080;
+    border-right:  1px solid #ffffff;
+    border-bottom: 1px solid #ffffff;
+    padding: 1px 4px;
+    outline: none;
+  }
+
+  /* window content */
+  .window-body {
+    flex: 1;
+    overflow: auto;
+    padding: 12px;
+    background: #ffffff;
+    border-top:    2px solid #808080;
+    border-left:   2px solid #808080;
+    border-right:  2px solid #ffffff;
+    border-bottom: 2px solid #ffffff;
+    margin: 4px;
+  }
+
+  /* large-icons file view */
+  .file-view {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    padding: 8px;
+  }
+  .file-icon {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 80px;
+    cursor: pointer;
+    padding: 4px;
+    text-decoration: none;
+    color: #000000;
+  }
+  .file-icon:hover .file-icon-img,
+  .file-icon:focus .file-icon-img {
+    outline: 1px dotted #000080;
+    background: rgba(0,0,128,0.15);
+  }
+  .file-icon:hover .file-icon-label,
+  .file-icon:focus .file-icon-label {
+    background: #000080;
+    color: #ffffff;
+  }
+  .file-icon-img {
+    font-size: 40px;
+    width: 52px;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 4px;
+  }
+  .file-icon-label {
+    font-size: 11px;
+    text-align: center;
+    word-break: break-word;
+    line-height: 1.3;
+    padding: 1px 2px;
+  }
+
+  /* status bar */
+  .status-bar {
+    display: flex;
+    height: 20px;
+    flex-shrink: 0;
+    gap: 2px;
+    padding: 2px 4px;
+  }
+  .status-segment {
+    flex: 1;
+    font-size: 11px;
+    line-height: 1;
+    padding: 1px 4px;
+    border-top:    1px solid #808080;
+    border-left:   1px solid #808080;
+    border-right:  1px solid #ffffff;
+    border-bottom: 1px solid #ffffff;
+    color: #000;
+    display: flex;
+    align-items: center;
+  }
+
+  /* ── taskbar ── */
+  .taskbar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 30px;
+    background: #d4d0c8;
+    border-top: 2px solid #ffffff;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 4px;
+    z-index: 9999;
+  }
+  .start-btn {
+    height: 22px;
+    padding: 0 8px;
+    font-family: 'MS Sans Serif', Tahoma, sans-serif;
+    font-size: 11px;
+    font-weight: bold;
+    background: #d4d0c8;
+    border-top:    2px solid #ffffff;
+    border-left:   2px solid #ffffff;
+    border-right:  2px solid #404040;
+    border-bottom: 2px solid #404040;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .start-btn:active {
+    border-top:    2px solid #404040;
+    border-left:   2px solid #404040;
+    border-right:  2px solid #ffffff;
+    border-bottom: 2px solid #ffffff;
+  }
+  .taskbar-sep {
+    width: 2px;
+    height: 22px;
+    border-left: 1px solid #808080;
+    border-right: 1px solid #ffffff;
+  }
+  .taskbar-apps { display: flex; gap: 2px; flex: 1; overflow: hidden; }
+  .taskbar-app {
+    height: 22px;
+    max-width: 160px;
+    padding: 0 8px;
+    font-family: 'MS Sans Serif', Tahoma, sans-serif;
+    font-size: 11px;
+    background: #d4d0c8;
+    border-top:    2px solid #ffffff;
+    border-left:   2px solid #ffffff;
+    border-right:  2px solid #404040;
+    border-bottom: 2px solid #404040;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: left;
+  }
+  .taskbar-app.active {
+    border-top:    2px solid #808080;
+    border-left:   2px solid #808080;
+    border-right:  2px solid #ffffff;
+    border-bottom: 2px solid #ffffff;
+    background: #c0bdb4;
+  }
+  .system-tray {
+    height: 22px;
+    padding: 0 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-top:    1px solid #808080;
+    border-left:   1px solid #808080;
+    border-right:  1px solid #ffffff;
+    border-bottom: 1px solid #ffffff;
+    font-size: 11px;
+  }
+  .tray-icon { font-size: 13px; }
+
+  /* ── Start Menu ── */
+  .start-menu {
+    position: absolute;
+    bottom: 30px;
+    left: 0;
+    width: 200px;
+    background: #d4d0c8;
+    border-top:    2px solid #ffffff;
+    border-left:   2px solid #ffffff;
+    border-right:  2px solid #404040;
+    border-bottom: 2px solid #404040;
+    display: none;
+    z-index: 99999;
+  }
+  .start-menu.open { display: flex; }
+  .start-menu-sidebar {
+    width: 24px;
+    background: linear-gradient(to top, #000080, #1084d0);
+    display: flex;
+    align-items: flex-end;
+    padding-bottom: 4px;
+  }
+  .start-menu-sidebar span {
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: bold;
+    letter-spacing: 2px;
+    white-space: nowrap;
+    font-family: 'MS Sans Serif', Tahoma, sans-serif;
+  }
+  .start-menu-items { flex: 1; padding: 4px 0; }
+  .start-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 8px;
+    cursor: pointer;
+    font-size: 11px;
+    font-family: 'MS Sans Serif', Tahoma, sans-serif;
+    text-decoration: none;
+    color: #000;
+  }
+  .start-menu-item:hover { background: #000080; color: #ffffff; }
+  .start-menu-divider { height: 1px; background: #808080; margin: 4px 0; border-bottom: 1px solid #ffffff; }
+
+  /* ── right-click context menu ── */
+  .context-menu {
+    position: absolute;
+    background: #d4d0c8;
+    border-top:    2px solid #ffffff;
+    border-left:   2px solid #ffffff;
+    border-right:  2px solid #404040;
+    border-bottom: 2px solid #404040;
+    display: none;
+    z-index: 99998;
+    min-width: 160px;
+  }
+  .context-menu.open { display: block; }
+  .ctx-item {
+    padding: 4px 16px 4px 24px;
+    font-size: 11px;
+    cursor: pointer;
+    font-family: 'MS Sans Serif', Tahoma, sans-serif;
+    white-space: nowrap;
+  }
+  .ctx-item:hover { background: #000080; color: #ffffff; }
+  .ctx-sep { height: 1px; background: #808080; margin: 2px 0; border-bottom: 1px solid #ffffff; }
+
+  /* ── welcome dialog ── */
+  .dialog {
+    position: absolute;
+    background: #d4d0c8;
+    border-top:    2px solid #ffffff;
+    border-left:   2px solid #ffffff;
+    border-right:  2px solid #404040;
+    border-bottom: 2px solid #404040;
+    z-index: 10000;
+    width: 340px;
+  }
+  .dialog-body {
+    padding: 16px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .dialog-icon { font-size: 36px; flex-shrink: 0; }
+  .dialog-text { font-size: 11px; line-height: 1.6; }
+  .dialog-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px 16px 12px;
+  }
+  .dialog-btn {
+    min-width: 72px;
+    height: 22px;
+    font-family: 'MS Sans Serif', Tahoma, sans-serif;
+    font-size: 11px;
+    background: #d4d0c8;
+    border-top:    2px solid #ffffff;
+    border-left:   2px solid #ffffff;
+    border-right:  2px solid #404040;
+    border-bottom: 2px solid #404040;
+    cursor: pointer;
+    padding: 0 12px;
+  }
+  .dialog-btn:active {
+    border-top:    2px solid #404040;
+    border-left:   2px solid #404040;
+    border-right:  2px solid #ffffff;
+    border-bottom: 2px solid #ffffff;
+  }
+  .dialog-btn.default { outline: 1px solid #000; outline-offset: -3px; }
+
+  /* draggable */
+  .draggable { cursor: default; }
+</style>
+</head>
+<body>
+<div class="desktop" id="desktop">
+
+  <!-- Desktop Icons -->
+  <div class="desktop-icons">
+    <a href="bus.html" class="icon" ondblclick="window.location='bus.html'">
+      <div class="icon-img">🚌</div>
+      <div class="icon-label">Bus Stop Sign Maker</div>
+    </a>
+    <a href="train.html" class="icon" ondblclick="window.location='train.html'">
+      <div class="icon-img">🚇</div>
+      <div class="icon-label">Train Station Sign Maker</div>
+    </a>
+    <div class="icon">
+      <div class="icon-img">🐻</div>
+      <div class="icon-label">Adventure Friends</div>
+    </div>
+    <div class="icon" ondblclick="alert('No items in Recycle Bin.')">
+      <div class="icon-img">🗑️</div>
+      <div class="icon-label">Recycle Bin</div>
+    </div>
+  </div>
+
+  <!-- Main Explorer Window -->
+  <div class="window" id="mainWin" style="top:40px; left:110px; width:520px;">
+    <div class="title-bar draggable" id="mainWinBar">
+      <span class="title-bar-icon">📁</span>
+      <span class="title-bar-text">AdventureCore — Sign Maker Workshop</span>
+      <div class="title-bar-controls">
+        <button class="win-btn" title="Minimize" onclick="minimizeWin()">_</button>
+        <button class="win-btn" title="Maximize" onclick="maximizeWin()">□</button>
+        <button class="win-btn close" title="Close" onclick="closeWin()">✕</button>
+      </div>
+    </div>
+    <div class="menu-bar">
+      <span class="menu-item">File</span>
+      <span class="menu-item">Edit</span>
+      <span class="menu-item">View</span>
+      <span class="menu-item">Go</span>
+      <span class="menu-item">Favorites</span>
+      <span class="menu-item">Help</span>
+    </div>
+    <div class="toolbar">
+      <button class="tb-btn" title="Back">◀</button>
+      <button class="tb-btn" title="Forward">▶</button>
+      <button class="tb-btn" title="Up">↑</button>
+      <div class="tb-sep"></div>
+      <button class="tb-btn" title="Cut">✂</button>
+      <button class="tb-btn" title="Copy">📋</button>
+      <button class="tb-btn" title="Paste">📄</button>
+      <div class="tb-sep"></div>
+      <button class="tb-btn" title="Delete">🗑</button>
+    </div>
+    <div class="address-bar">
+      <span class="address-label">Address</span>
+      <input class="address-input" type="text" value="C:\AdventureCore\Sign Makers" readonly>
+    </div>
+    <div class="window-body">
+      <div class="file-view">
+        <a href="bus.html" class="file-icon">
+          <div class="file-icon-img">🚌</div>
+          <div class="file-icon-label">Bus Stop Sign Maker</div>
+        </a>
+        <a href="train.html" class="file-icon">
+          <div class="file-icon-img">🚇</div>
+          <div class="file-icon-label">Train Station Sign Maker</div>
+        </a>
+        <div class="file-icon">
+          <div class="file-icon-img">🐻</div>
+          <div class="file-icon-label">Osho the Bear</div>
+        </div>
+        <div class="file-icon">
+          <div class="file-icon-img">🐕</div>
+          <div class="file-icon-label">Chester the Dog</div>
+        </div>
+        <div class="file-icon">
+          <div class="file-icon-img">🐘</div>
+          <div class="file-icon-label">Elephant</div>
+        </div>
+        <div class="file-icon">
+          <div class="file-icon-img">🦁</div>
+          <div class="file-icon-label">Lion</div>
+        </div>
+        <div class="file-icon">
+          <div class="file-icon-img">🐢</div>
+          <div class="file-icon-label">Turtle</div>
+        </div>
+        <div class="file-icon">
+          <div class="file-icon-img">📖</div>
+          <div class="file-icon-label">Adventure Stories</div>
+        </div>
+      </div>
+    </div>
+    <div class="status-bar">
+      <div class="status-segment">8 object(s)</div>
+      <div class="status-segment" style="max-width:120px;">My Computer</div>
+    </div>
+  </div>
+
+  <!-- Welcome Dialog -->
+  <div class="dialog" id="welcomeDialog" style="top:50%; left:50%; transform:translate(-50%,-60%);">
+    <div class="title-bar draggable" id="dialogBar">
+      <span class="title-bar-icon">💻</span>
+      <span class="title-bar-text">Welcome to AdventureCore!</span>
+      <div class="title-bar-controls">
+        <button class="win-btn close" onclick="closeDialog()">✕</button>
+      </div>
+    </div>
+    <div class="dialog-body">
+      <div class="dialog-icon">🗺️</div>
+      <div class="dialog-text">
+        <b>Welcome, Adventure Friend!</b><br><br>
+        AdventureCore is the home base for Alex &amp; the Adventure Friends — Osho, Chester, Elephant, Turtle &amp; Lion.<br><br>
+        Double-click any icon to open a Sign Maker, or explore the folder window.
+      </div>
+    </div>
+    <div class="dialog-buttons">
+      <button class="dialog-btn default" onclick="closeDialog()">OK</button>
+      <button class="dialog-btn" onclick="closeDialog()">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Context Menu -->
+  <div class="context-menu" id="ctxMenu">
+    <div class="ctx-item">View</div>
+    <div class="ctx-item">Arrange Icons</div>
+    <div class="ctx-sep"></div>
+    <div class="ctx-item">Refresh</div>
+    <div class="ctx-sep"></div>
+    <div class="ctx-item" onclick="document.getElementById('mainWin').style.display='flex'">Open Sign Makers</div>
+    <div class="ctx-sep"></div>
+    <div class="ctx-item">Properties</div>
+  </div>
+
+  <!-- Start Menu -->
+  <div class="start-menu" id="startMenu">
+    <div class="start-menu-sidebar"><span>AdventureCore</span></div>
+    <div class="start-menu-items">
+      <a class="start-menu-item" href="bus.html">🚌 &nbsp;Bus Stop Sign Maker</a>
+      <a class="start-menu-item" href="train.html">🚇 &nbsp;Train Station Sign Maker</a>
+      <div class="start-menu-divider"></div>
+      <div class="start-menu-item" onclick="openWin(); closeMenu()">📁 &nbsp;Sign Maker Workshop</div>
+      <div class="start-menu-item">🐻 &nbsp;Adventure Friends</div>
+      <div class="start-menu-divider"></div>
+      <div class="start-menu-item">⚙️ &nbsp;Settings</div>
+      <div class="start-menu-item">🔍 &nbsp;Find</div>
+      <div class="start-menu-item">❓ &nbsp;Help</div>
+      <div class="start-menu-divider"></div>
+      <div class="start-menu-item" onclick="alert('Goodnight, Adventure Friend! 🌙')">🚪 &nbsp;Shut Down...</div>
+    </div>
+  </div>
+
+  <!-- Taskbar -->
+  <div class="taskbar">
+    <button class="start-btn" id="startBtn" onclick="toggleMenu()">
+      <span style="font-size:14px;">🚀</span> Start
+    </button>
+    <div class="taskbar-sep"></div>
+    <div class="taskbar-apps">
+      <button class="taskbar-app active" id="mainTaskBtn" onclick="toggleWin()">
+        📁 Sign Maker Workshop
+      </button>
+    </div>
+    <div class="system-tray">
+      <span class="tray-icon">🔊</span>
+      <span class="tray-icon">🌐</span>
+      <span id="clock">12:00 PM</span>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // ── Clock ──
+  function updateClock() {
+    const now = new Date();
+    let h = now.getHours(), m = now.getMinutes();
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12 || 12;
+    document.getElementById('clock').textContent =
+      h + ':' + String(m).padStart(2, '0') + ' ' + ampm;
+  }
+  updateClock();
+  setInterval(updateClock, 10000);
+
+  // ── Dialog ──
+  function closeDialog() {
+    document.getElementById('welcomeDialog').style.display = 'none';
+  }
+
+  // ── Window minimize/maximize/close/open ──
+  let winMaximized = false, winHidden = false;
+  let savedStyle = {};
+
+  function minimizeWin() {
+    document.getElementById('mainWin').style.display = 'none';
+    document.getElementById('mainTaskBtn').classList.remove('active');
+    winHidden = true;
+  }
+  function maximizeWin() {
+    const w = document.getElementById('mainWin');
+    if (!winMaximized) {
+      savedStyle = { top: w.style.top, left: w.style.left, width: w.style.width };
+      w.style.top = '0'; w.style.left = '0';
+      w.style.width = '100vw';
+      w.style.height = 'calc(100vh - 30px)';
+      winMaximized = true;
+    } else {
+      w.style.top = savedStyle.top; w.style.left = savedStyle.left;
+      w.style.width = savedStyle.width; w.style.height = '';
+      winMaximized = false;
+    }
+  }
+  function closeWin() {
+    document.getElementById('mainWin').style.display = 'none';
+    document.getElementById('mainTaskBtn').style.display = 'none';
+    winHidden = true;
+  }
+  function openWin() {
+    const w = document.getElementById('mainWin');
+    w.style.display = 'flex';
+    document.getElementById('mainTaskBtn').style.display = '';
+    document.getElementById('mainTaskBtn').classList.add('active');
+    winHidden = false;
+  }
+  function toggleWin() {
+    if (winHidden || document.getElementById('mainWin').style.display === 'none') {
+      openWin();
+    } else {
+      minimizeWin();
+    }
+  }
+
+  // ── Start Menu ──
+  function toggleMenu() {
+    document.getElementById('startMenu').classList.toggle('open');
+  }
+  function closeMenu() {
+    document.getElementById('startMenu').classList.remove('open');
+  }
+
+  // ── Context Menu ──
+  const desktop = document.getElementById('desktop');
+  const ctx = document.getElementById('ctxMenu');
+
+  desktop.addEventListener('contextmenu', e => {
+    if (e.target.closest('.window') || e.target.closest('.dialog') ||
+        e.target.closest('.start-menu') || e.target.closest('.taskbar')) return;
+    e.preventDefault();
+    ctx.style.left = Math.min(e.clientX, window.innerWidth - 180) + 'px';
+    ctx.style.top  = Math.min(e.clientY, window.innerHeight - 200) + 'px';
+    ctx.classList.add('open');
+  });
+
+  // ── Close menus / ctx on outside click ──
+  document.addEventListener('mousedown', e => {
+    if (!e.target.closest('#ctxMenu'))    ctx.classList.remove('open');
+    if (!e.target.closest('#startMenu') && !e.target.closest('#startBtn'))
+      closeMenu();
+  });
+
+  // ── Drag windows ──
+  function makeDraggable(bar, win) {
+    let dx = 0, dy = 0, x = 0, y = 0;
+    bar.addEventListener('mousedown', e => {
+      if (e.target.closest('.win-btn')) return;
+      e.preventDefault();
+      x = e.clientX; y = e.clientY;
+      document.addEventListener('mousemove', drag);
+      document.addEventListener('mouseup', stopDrag);
+    });
+    function drag(e) {
+      dx = x - e.clientX; dy = y - e.clientY;
+      x = e.clientX; y = e.clientY;
+      win.style.top  = (win.offsetTop  - dy) + 'px';
+      win.style.left = (win.offsetLeft - dx) + 'px';
+    }
+    function stopDrag() {
+      document.removeEventListener('mousemove', drag);
+      document.removeEventListener('mouseup', stopDrag);
+    }
+  }
+  makeDraggable(document.getElementById('mainWinBar'),  document.getElementById('mainWin'));
+  makeDraggable(document.getElementById('dialogBar'),   document.getElementById('welcomeDialog'));
+
+  // ── Icon single-click select ──
+  document.querySelectorAll('.desktop-icons .icon').forEach(icon => {
+    icon.addEventListener('click', e => {
+      document.querySelectorAll('.desktop-icons .icon').forEach(i => i.classList.remove('selected'));
+      icon.classList.add('selected');
+      e.preventDefault();
+    });
+    icon.addEventListener('dblclick', e => {
+      window.location.href = icon.href || '#';
+    });
+  });
+</script>
+</body>
+</html>

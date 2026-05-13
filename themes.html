@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AdventureCore — Choose Your Style</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f5f1e8;
+      --card: #fff;
+      --ink: #212322;
+      --muted: #666;
+      --border: #d8d2c5;
+      --gold: #F9B326;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: Inter, system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      min-height: 100vh;
+    }
+
+    /* ── top nav (shared with sign makers) ── */
+    .site-nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: 36px;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      z-index: 100;
+      font-size: 13px;
+    }
+    .site-nav a {
+      color: var(--ink);
+      text-decoration: none;
+      font-weight: 600;
+      padding: 4px 8px;
+      border-radius: 6px;
+      transition: background 0.15s;
+    }
+    .site-nav a:hover { background: #e8e4db; }
+    .nav-home { font-weight: 800; }
+    .nav-right { display: flex; gap: 4px; }
+
+    main {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 64px 24px 60px;
+    }
+
+    h1 {
+      font-size: clamp(28px, 4vw, 42px);
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      margin-bottom: 8px;
+    }
+    .intro {
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.5;
+      margin-bottom: 36px;
+    }
+
+    /* ── theme grid ── */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .theme-card {
+      background: var(--card);
+      border: 2px solid var(--border);
+      border-radius: 16px;
+      padding: 20px 16px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .theme-card.active {
+      border-color: var(--gold);
+      box-shadow: 0 0 0 3px rgba(249,179,38,0.25);
+    }
+
+    .theme-emoji { font-size: 36px; line-height: 1; margin-bottom: 4px; }
+    .theme-name { font-weight: 800; font-size: 15px; }
+    .theme-desc { font-size: 13px; color: var(--muted); line-height: 1.4; flex: 1; }
+    .active-badge {
+      display: none;
+      font-size: 11px;
+      font-weight: 700;
+      color: #856000;
+      background: rgba(249,179,38,0.2);
+      border-radius: 99px;
+      padding: 2px 8px;
+      align-self: flex-start;
+    }
+    .theme-card.active .active-badge { display: inline-block; }
+
+    .card-actions {
+      display: flex;
+      gap: 6px;
+      margin-top: 4px;
+    }
+    .btn-use {
+      flex: 1;
+      background: var(--gold);
+      color: var(--ink);
+      border: none;
+      border-radius: 99px;
+      padding: 8px 10px;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: filter 0.15s;
+    }
+    .btn-use:hover { filter: brightness(1.08); }
+    .theme-card.active .btn-use {
+      background: #e8e4db;
+      color: var(--muted);
+      cursor: default;
+    }
+    .btn-preview {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      border-radius: 99px;
+      padding: 8px 10px;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      white-space: nowrap;
+      transition: background 0.15s;
+    }
+    .btn-preview:hover { background: var(--bg); }
+
+    /* ── reset ── */
+    .reset-row {
+      text-align: center;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .reset-row button {
+      background: none;
+      border: none;
+      color: var(--muted);
+      text-decoration: underline;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 13px;
+    }
+    .reset-row button:hover { color: var(--ink); }
+
+    @media (max-width: 500px) {
+      .grid { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<nav class="site-nav">
+  <a href="index.html" class="nav-home">🏠 AdventureCore</a>
+  <div class="nav-right">
+    <a href="bus.html">🚌 Bus Signs</a>
+    <a href="train.html">🚇 Train Signs</a>
+  </div>
+</nav>
+
+<main>
+  <h1>Choose Your Style</h1>
+  <p class="intro">Pick the homepage look for adventurecore.org. Your choice is saved and stays until you change it!</p>
+
+  <div class="grid">
+
+    <div class="theme-card" data-theme="1">
+      <div class="theme-emoji">🌟</div>
+      <div class="theme-name">Night Sky</div>
+      <div class="active-badge">✓ Current</div>
+      <div class="theme-desc">Dark starry background with a gold compass and glowing tool cards.</div>
+      <div class="card-actions">
+        <button class="btn-use" onclick="setTheme(1)">Use this</button>
+        <a class="btn-preview" href="index.html" target="_blank">Preview</a>
+      </div>
+    </div>
+
+    <div class="theme-card" data-theme="2">
+      <div class="theme-emoji">🔍</div>
+      <div class="theme-name">Google Style</div>
+      <div class="active-badge">✓ Current</div>
+      <div class="theme-desc">Clean white page with big colorful logo and sign maker buttons.</div>
+      <div class="card-actions">
+        <button class="btn-use" onclick="setTheme(2)">Use this</button>
+        <a class="btn-preview" href="index2.html" target="_blank">Preview</a>
+      </div>
+    </div>
+
+    <div class="theme-card" data-theme="3">
+      <div class="theme-emoji">📺</div>
+      <div class="theme-name">Classic Web</div>
+      <div class="active-badge">✓ Current</div>
+      <div class="theme-desc">Retro 1999 MSN-style portal with columns, orange headers, and news.</div>
+      <div class="card-actions">
+        <button class="btn-use" onclick="setTheme(3)">Use this</button>
+        <a class="btn-preview" href="index3.html" target="_blank">Preview</a>
+      </div>
+    </div>
+
+    <div class="theme-card" data-theme="4">
+      <div class="theme-emoji">💻</div>
+      <div class="theme-name">Windows 98</div>
+      <div class="active-badge">✓ Current</div>
+      <div class="theme-desc">Full desktop simulation — draggable windows, Start menu, and a clock.</div>
+      <div class="card-actions">
+        <button class="btn-use" onclick="setTheme(4)">Use this</button>
+        <a class="btn-preview" href="index4.html" target="_blank">Preview</a>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="reset-row">
+    <button onclick="resetTheme()">Reset to default (Night Sky)</button>
+  </div>
+</main>
+
+<script>
+  function setTheme(n) {
+    if (n === 1) localStorage.removeItem('acTheme');
+    else localStorage.setItem('acTheme', String(n));
+    window.location.href = 'index.html';
+  }
+  function resetTheme() {
+    localStorage.removeItem('acTheme');
+    window.location.href = 'index.html';
+  }
+
+  // Highlight whichever is currently active
+  const current = localStorage.getItem('acTheme') || '1';
+  document.querySelectorAll('.theme-card').forEach(c => {
+    if (c.dataset.theme === current) {
+      c.classList.add('active');
+      c.querySelector('.btn-use').textContent = '✓ Active';
+    }
+  });
+</script>
+</body>
+</html>

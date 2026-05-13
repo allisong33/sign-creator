@@ -8,7 +8,13 @@
 :root{--bg:#f5f1e8;--card:#fff;--ink:#212322;--muted:#666;--border:#d8d2c5}
 *{box-sizing:border-box}
 body{margin:0;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;background:var(--bg);color:var(--ink)}
-main{max-width:1150px;margin:0 auto;padding:28px}
+main{max-width:1150px;margin:0 auto;padding:64px 28px 28px}
+.site-nav{position:fixed;top:0;left:0;right:0;height:36px;background:#f5f1e8;border-bottom:1px solid #d8d2c5;display:flex;align-items:center;justify-content:space-between;padding:0 20px;z-index:100;font-size:13px}
+.site-nav a{color:#212322;text-decoration:none;font-weight:600;padding:4px 8px;border-radius:6px;transition:background .15s}
+.site-nav a:hover{background:#e8e4db}
+.nav-home{font-weight:800}
+.nav-right{display:flex;gap:4px}
+.nav-current{background:#F9B326;color:#212322!important}
 h1{margin:0 0 8px;font-size:clamp(28px,4vw,44px);letter-spacing:-.04em}
 .intro{margin:0 0 24px;color:var(--muted);line-height:1.45}
 .app{display:grid;grid-template-columns:minmax(280px,360px) 1fr;gap:20px;align-items:start}
@@ -50,6 +56,13 @@ select:disabled{opacity:.5;cursor:default}
 </style>
 </head>
 <body>
+<nav class="site-nav">
+  <a href="index.html" class="nav-home">🏠 AdventureCore</a>
+  <div class="nav-right">
+    <a href="bus.html" class="nav-current">🚌 Bus Signs</a>
+    <a href="train.html">🚇 Train Signs</a>
+  </div>
+</nav>
 <main>
 <h1>MBTA-Style Bus Stop Sign Maker</h1>
 <p class="intro">Create a bus stop sign. Enter route details manually, then export as SVG or PNG.</p>

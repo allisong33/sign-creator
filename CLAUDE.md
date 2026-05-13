@@ -25,6 +25,19 @@ There are no tests, linters, or CI scripts at this time.
 
 **Stack:** Vanilla HTML/JS, `<script type="module">` for ES modules, no bundler, no framework. Planned migration to Vite/React at Phase 10 (unified UI) if needed.
 
+**Homepage and navigation:**
+
+| File | What it does |
+|------|-------------|
+| `index.html` | Default homepage (Night Sky design). Checks `localStorage('acTheme')` at load and immediately redirects to `index2/3/4.html` if a preference is set. |
+| `index2.html` | Alternate homepage — Google search-page clone style |
+| `index3.html` | Alternate homepage — 1999 MSN portal style |
+| `index4.html` | Alternate homepage — Windows 98 desktop simulation |
+| `themes.html` | Style chooser — lets Alex pick which homepage shows at `/`. Writes `acTheme` to `localStorage`. |
+| `vercel.json` | Tells Vercel this is a static site (`"buildCommand": "", "outputDirectory": "."`) |
+
+`bus.html` and `train.html` both have a fixed 36px `.site-nav` bar (beige, Inter) linking back to `index.html` and cross-linking to each other. The nav CSS is inlined in each file's `<style>` block.
+
 **Two independent sign tools:**
 
 | File | What it does |
@@ -99,7 +112,8 @@ Button classes and their colors:
 | 3 | Bus API stop-first mode (multi-route) | **Next** |
 | 4–5 | Bus custom mode polish, data refinement | Future |
 | 6–9 | Train station JSON, icons, multi-line, API | Future |
-| 10 | Unified UI + Vercel deployment | Future |
+| 10 | Unified UI + Vite/React migration | Future |
+| — | Homepage (4 designs) + Vercel deployment at adventurecore.org | Done (outside phase plan) |
 
 ## Open questions — stop and ask, do not silently resolve
 

@@ -65,7 +65,8 @@ Currently generates SVG as a string in `buildSvg()` and sets `innerHTML`. Icons 
 - `src/bus/renderer.js` — `renderSign(state)`, `getSignSvgString()`, Domino Effect logic
 - `src/bus/api.js` — `fetchBusRoutes()`, `fetchStopsForRoute()`, `fetchRoutesForStop()`
 - `src/bus/state.js` — sign state management (planned)
-- `src/train/` — parallel structure (planned, Phase 6+)
+- `src/train/data.js` — curated station data for all MBTA rapid transit lines; each station has `id`, `name`, optional `signName`, optional `placeId`
+- `src/train/api.js` — `fetchStationFacilities(placeId)` for elevator/escalator data from MBTA V3 `/facilities`
 
 **Export pipeline:**
 
@@ -109,16 +110,20 @@ Button classes and their colors:
 | 0 | Alpha prototypes + repo reorg | Done |
 | 1 | Multi-route bus rendering engine (Domino Effect) | Done |
 | 2 | Bus API route-first mode + multi-route stop fill | Done |
-| 3 | Bus API stop-first mode (multi-route) | **Next** |
-| 4–5 | Bus custom mode polish, data refinement | Future |
-| 6–9 | Train station JSON, icons, multi-line, API | Future |
+| 3 | Bus API stop-first mode (multi-route, live stop search) | Done |
+| 4 | Bus custom mode enhancement (labels, field order, offline-safe) | Done |
+| 5 | Bus polish — stop search, export filenames, Start Over, error states | Done |
+| 6 | Train station JSON mode — `src/train/data.js`, Use Station Data tab, station picker | Done |
+| 7 | Train 4 icon slots (left-1/2, right-1/2) + accessibility API (`src/train/api.js`) | Done |
+| 8 | Train multi-line station support (Downtown Crossing = Red + Orange, etc.) | **Next** |
+| 9 | Train API deeper exploration (real-time alerts, departures, etc.) | Future |
 | 10 | Unified UI + Vite/React migration | Future |
 | — | Homepage (4 designs) + Vercel deployment at adventurecore.org | Done (outside phase plan) |
 
 ## Open questions — stop and ask, do not silently resolve
 
-- Direction selector: required for route→stop lists? (Deferred to Phase 5)
-- Stops with > 5 routes: currently silently capped at 5 (first 5 returned by API). Warn the user or let them pick? (Revisit Phase 3)
-- Frequency number in the clock face: is it in the API `attributes.headway_secs`? (Investigate Phase 5)
-- Green Line station grouping by branch? (Deferred to Phase 6)
+- Direction selector: required for route→stop lists? (Deferred to someday-maybe)
+- Stops with > 5 routes: currently silently capped at 5 (first 5 returned by API). Warn the user or let them pick? (Resolved as "silent cap for now")
+- Frequency number in the clock face: is it in the API `attributes.headway_secs`? (See `docs/someday-maybe.md`)
 - Multi-line station visual style? (Deferred to Phase 8)
+- placeId coverage: Green Line branch surface stops and most Commuter Rail stations don't have placeIds in `src/train/data.js` yet — add when needed

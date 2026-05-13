@@ -1037,89 +1037,70 @@ git commit -m "feat: fill bus sign from MBTA route + stop selection (Phase 2.5)"
 
 ---
 
-## Phase 3 — Bus API Stop-First Mode with Multi-Route
-
-**Summary milestone — detail to be written when Phase 2 is complete.**
+## Phase 3 — Bus API Stop-First Mode with Multi-Route ✅ COMPLETE
 
 **Goal:** User searches/selects a stop first; app fetches all routes at that stop and renders a multi-route sign automatically using the Domino Effect engine.
 
-**Key new API function needed:**
-```js
-export async function fetchRoutesForStop(stopId) {
-  // GET /routes?filter[stop]={stopId}&filter[type]=3&fields[route]=short_name,description
-}
-```
-
-**Key new UI work:**
-- Stop search input with typeahead (or simple text filter over a fetched stop list)
-- Auto-select correct number of route slots based on route count at stop
-- Graceful handling of stops with more than 5 routes (show first 5 + warning)
-- Direction selector (inbound/outbound) to filter stop list
-
-**Acceptance criteria (high level):**
-- User can search/select a stop
-- App fills a multi-route sign with all routes at that stop (up to 5)
-- User can edit any field after fill
-- Export works
+**What was built:**
+- `fetchRoutesForStop(stopId)` in `src/bus/api.js` — fetches all routes at a stop, determines direction, resolves destination text
+- `fetchStopName(stopId)` in `src/bus/api.js` — for lookup-by-stop-number flow
+- Live custom stop list (replaces `<select>`) with real-time text filtering
+- Stop-number lookup field (separate from sign stop-number field)
+- Multi-route sign auto-fills from stop selection; silently capped at 5 routes
 
 ---
 
-## Phase 4 — Bus Custom Mode Enhancement
-
-**Summary milestone.**
+## Phase 4 — Bus Custom Mode Enhancement ✅ COMPLETE
 
 **Goal:** Make the manual bus builder clean and reliable as a standalone tool.
 
-**Scope:**
-- Rename "Frequent-service clock" toggle to "Show frequent-service symbol"
-- Improve labels and field order
-- Ensure Custom mode has zero dependency on API connectivity
-- Route count selector (1–5) with matching form fields
-- Offline/no-network smoke test
+**What was built:**
+- Mode toggle defaulting to "Use MBTA Data"; Custom tab second
+- Stop number field hidden in API mode, shown in Custom mode
+- Consistent section headers using `.section-divider` style
+- Start Over button resets all state and returns to API mode
 
 ---
 
-## Phase 5 — Bus Polish and Data Refinement
-
-**Summary milestone.**
+## Phase 5 — Bus Polish and Data Refinement ✅ COMPLETE
 
 **Goal:** Make the bus flow usable by Alex without developer help.
 
-**Scope:**
-- Direction-aware route→stop lists (inbound/outbound selector)
-- Better stop search (search by name substring, not just scroll)
-- Export filenames that include stop name
-- Frequency number in clock face (if API provides it — check `attributes.headway_secs`)
-- Loading spinners and better error states
-- Text auto-fit for very long destination strings
+**What was built:**
+- Live stop search list (custom div, not native select) with real-time filtering
+- Export filenames include stop name: `bus-{stop-number}-{stop-name}.svg`
+- Start Over clears all routes and returns to default state
+- Deferred to `docs/someday-maybe.md`: direction-aware stop lists, text auto-fit, frequency clock number
 
 ---
 
-## Phase 6 — Train Station JSON Mode
+## Phase 6 — Train Station JSON Mode ✅ COMPLETE
 
-**Summary milestone.**
+**Goal:** Train mode gets a line → station dropdown powered by a local JS data file.
 
-**Goal:** Train mode gets a line → station dropdown powered by a local JSON file.
-
-**Key new file:** `src/train/data.js` — exports `TRAIN_STATIONS` object structured as in §10 of the PRD.
-
-**New file:** `src/train/renderer.js` — DOM-based rendering for the train SVG template (analogous to bus renderer).
-
-**Flow:** Choose line → station dropdown populates → choose station → header color + station name fill → icons + maps can be customized → export.
-
----
-
-## Phase 7 — Train Icon Slots and Arrow Assets
-
-**Summary milestone.**
-
-**Goal:** Add more icon slots to the train sign sub-header; create left arrow by flipping right arrow SVG horizontally.
-
-**Scope:** Left/right icon slots independent; support none/elevator/escalator/wheelchair/bus/arrow-left/arrow-right/airplane per slot.
+**What was built:**
+- `src/train/data.js` — `LINES` export with all MBTA rapid transit lines and stations; each station has `id`, `name`, optional `signName`, optional `placeId`
+- `train.html` — Use Station Data / Custom mode toggle; line select → live station search list → auto-fills sign name, subheader, line color
+- Subheader always editable in both modes
+- Generic default sign ("MBTA STATION", red, blank subheader)
+- PNG export fixed via base64 image inlining (`buildSvgForPng()`)
+- SVG/PNG exports use absolute `assetUrl()` paths so images resolve outside page context
 
 ---
 
-## Phase 8 — Train Multi-Line Station Support
+## Phase 7 — Train Icon Slots and Arrow Assets ✅ COMPLETE
+
+**Goal:** Add more icon slots to the train sign sub-header; wire accessibility data from MBTA API.
+
+**What was built:**
+- 4 icon slots: left-1 (x=407), left-2 (x=459), right-1 (x=1100), right-2 (x=1152) — all 44×44px at y=196
+- `src/train/api.js` — `fetchStationFacilities(placeId)` hits MBTA V3 `/facilities` for elevator/escalator data
+- `placeId` added to stations in `src/train/data.js` (all Red, Orange, Blue, Green underground/GLX, key Silver/Commuter hubs)
+- Accessibility panel auto-fetches and displays elevator/escalator status on station selection
+
+---
+
+## Phase 8 — Train Multi-Line Station Support ← NEXT
 
 **Summary milestone.**
 
@@ -1129,11 +1110,13 @@ export async function fetchRoutesForStop(stopId) {
 
 ---
 
-## Phase 9 — Train API Exploration
+## Phase 9 — Train API Deeper Exploration
 
 **Summary milestone.**
 
-**Goal:** Evaluate whether MBTA API adds anything useful over curated JSON for train signs.
+**Goal:** Evaluate and add real-time or scheduled data from the MBTA API to train signs.
+
+**Note:** Elevator/escalator facilities (`/facilities`) were added in Phase 7. Remaining exploration: real-time alerts, scheduled departures, headways.
 
 **Recommendation from PRD:** Stick with curated JSON for visual sign-making; add train API only if a clear need emerges.
 
@@ -1157,12 +1140,11 @@ export async function fetchRoutesForStop(stopId) {
 
 ## Open Questions (from §14 of PRD)
 
-These are still open — do not silently resolve them; stop and ask:
-
 | Question | Status |
 |----------|--------|
-| Direction selector required for stop lists? | Deferred to Phase 5 |
-| Stops with > 5 routes — show first 5 or let user pick? | Deferred to Phase 3 |
-| Frequency number in clock face (is it in the API?) | Investigate in Phase 5 |
-| Green Line stations grouped by branch? | Deferred to Phase 6 |
+| Direction selector required for stop lists? | Deferred to `docs/someday-maybe.md` |
+| Stops with > 5 routes — show first 5 or let user pick? | Silent cap in place; revisit if needed |
+| Frequency number in clock face (is it in the API?) | Deferred to `docs/someday-maybe.md` |
+| Green Line stations grouped by branch? | Done — branch labels shown in dropdown, `signName` strips them on sign |
 | Multi-line station visual style? | Deferred to Phase 8 |
+| placeId coverage for Green Line branches / Commuter Rail? | Partial — surface stops intentionally omitted; add as needed |
